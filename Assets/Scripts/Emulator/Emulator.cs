@@ -13,7 +13,6 @@ public class Emulator : MonoBehaviour {
 	// Controller1 *Controller
 	// Controller2 *Controller
 
-    private uint8[] ROM;
     private uint8[] RAM;
 
     private EmulatorMapperCore mapper;
@@ -23,7 +22,23 @@ public class Emulator : MonoBehaviour {
 
     // Debug Crap
     public bool ShouldStep;
-    public int PC, A, X, Y, SP;
+
+    [Header("Program Counter")]
+    public int PC;
+    [Header("Registers")]
+    public int A;
+    public int X;
+    public int Y;
+    public int SP;
+    [Header("Flags")]
+    public bool C;
+    public bool Z;
+    public bool I;
+    public bool D;
+    public bool B;
+    public bool U;
+    public bool V;
+    public bool N;
 
     bool cartLoadComplete;
 
@@ -45,26 +60,33 @@ public class Emulator : MonoBehaviour {
         if(!cartLoadComplete){
             cart.ContinueMemoryCopy();
             cpu.Reset();
-
-            PC = cpu.GetPC();
-            A = cpu.GetA();
-            X = cpu.GetX();
-            Y = cpu.GetY();
-            SP = cpu.GetSP();
+            UpdateDebugVariables();
         }
 
-        if(cartLoadComplete && ShouldStep){
+        if(cartLoadComplete /*&& ShouldStep*/){
             Step();
             // StepSeconds(Time.deltaTime);
             ShouldStep = false;
-            PC = cpu.GetPC();
-            A = cpu.GetA();
-            X = cpu.GetX();
-            Y = cpu.GetY();
-            SP = cpu.GetSP();
+            UpdateDebugVariables();
         }
 
         // TODO get PPU... texture? Then draw to set-aside texture that's rendering to a canvas? Sure, why not...
+    }
+
+    void UpdateDebugVariables(){
+        PC = cpu.GetPC();
+        A = cpu.GetA();
+        X = cpu.GetX();
+        Y = cpu.GetY();
+        SP = cpu.GetSP();
+        C = cpu.GetC();
+        Z = cpu.GetZ();
+        I = cpu.GetI();
+        D = cpu.GetD();
+        B = cpu.GetB();
+        U = cpu.GetU();
+        V = cpu.GetV();
+        N = cpu.GetN();
     }
 
     public void Reset(){

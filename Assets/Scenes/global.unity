@@ -239,6 +239,14 @@ MonoBehaviour:
   X: 0
   Y: 0
   SP: 0
+  C: 0
+  Z: 0
+  I: 0
+  D: 0
+  B: 0
+  U: 0
+  V: 0
+  N: 0
 --- !u!4 &998263208
 Transform:
   m_ObjectHideFlags: 0

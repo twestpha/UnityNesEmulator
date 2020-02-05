@@ -182,6 +182,15 @@ public class EmulatorCPU {
 
     // Flags
     uint8 C, Z, I, D, B, U, V, N;
+    // Debug Crap
+    public bool GetC(){ return C > 0; }
+    public bool GetZ(){ return Z > 0; }
+    public bool GetI(){ return I > 0; }
+    public bool GetD(){ return D > 0; }
+    public bool GetB(){ return B > 0; }
+    public bool GetU(){ return U > 0; }
+    public bool GetV(){ return V > 0; }
+    public bool GetN(){ return N > 0; }
 
     EmulatorCPUMemory mem;
     Interrupt interrupt;
@@ -235,8 +244,7 @@ public class EmulatorCPU {
 
     public void Reset(){
         // PC = Read16(PC_RESET_ADDRESS);
-        PC = 0xC000;
-        Debug.Log("Resetting PC: " + PC);
+        PC = 0xC000; // TODO fix this?
         SP = SP_RESET;
         SetFlags(FLAGS_RESET_VALUE);
     }
@@ -438,6 +446,9 @@ public class EmulatorCPU {
         inst.address = address;
         inst.pc = PC;
         inst.mode = mode;
+        Debug.Log("  Address: " + address);
+        Debug.Log("       PC: " + PC);
+        Debug.Log("     Mode: " + mode);
 
         functionTable[opcode](inst);
 

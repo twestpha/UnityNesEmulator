@@ -6,9 +6,9 @@ public class EmulatorMapperCore {
     public EmulatorMapperCore(EmulatorCartridge cart){
         uint8 mapperType = cart.GetMapper();
 
-        if(mapperType == 0 || mapperType == 2){
-            Debug.Log("Using Mapper2");
-            mapper = new EmulatorMapper2(cart);
+        if(mapperType == 0){
+            Debug.Log("Using Mapper0");
+            mapper = new EmulatorMapper0(cart);
         } else if(mapperType == 1){
             Debug.Log("Using Mapper1");
             mapper = new EmulatorMapper1(cart);
@@ -37,6 +37,56 @@ public class EmulatorMapper {
     public virtual void Step(){}
     public virtual uint8 Read(uint16 address){ return 0; }
     public virtual void Write(uint16 address, uint8 value){}
+}
+
+//##############################################################################
+// Mapper0
+//##############################################################################
+public class EmulatorMapper0 : EmulatorMapper {
+    EmulatorCartridge cart;
+
+    public EmulatorMapper0(EmulatorCartridge cart_){
+        cart = cart_;
+    }
+
+    public override uint8 Read(uint16 address){
+        // NESTest: Should be these first instruction starting at 0xC000 (Virtual)
+        // 00:C000:4C F5 C5  JMP $C5F5
+        // 0xC000 maps to 0x0010 in ROM in FCEUX, which is really just the thing without the header...?
+        // Do I have to remove the header from ROM?
+
+        if(address >= 0x6000 && address <= 0x7FFF){
+            // CPU $6000-$7FFF: Family Basic only: PRG RAM, mirrored as necessary to fill entire 8 KiB window, write protectable with an external switch
+            uint16 index = (address - 0x6000) % (cart.prgCount - 0x2000 /* 0x7FFF - 0x6000 */);
+            return cart.PRG[index];
+        } else if(address >= 0x8000 && address <= 0xBFFF){
+            // CPU $8000-$BFFF: First 16 KB of ROM.
+            return (uint8)(cart.ROM[address - 0x8000]);
+        } else if(address >= 0xC000 && address <= 0xFFFF){
+
+            // CPU $C000-$FFFF: Last 16 KB of ROM (NROM-256) or mirror of $8000-$BFFF (NROM-128).
+            // This is bugged, I need a better way to detect "NROM-128". I assumed ROM size determined it, but probably not, huh
+            // they kind of didn't have a *.count method to check. But it was hardware... probably just a fucking mysterious bit somewhere.
+            if(false && cart.romCount > 0x4000){
+                // Debug.Log("last 16: " + address);
+                // Debug.Log("Rom Length: " + (uint16)(cart.romCount));
+                // Debug.Log("actual index: " + (uint16)(address - 0x8000));
+                return (uint8)(cart.ROM[address - 0x8000]);
+            } else {
+                int index = address - 0xC000; // does this work?
+                // Debug.Log("mirror of 0x8000: " + address);
+                // Debug.Log("actual index: " + (uint16)(index));
+                return (uint8)(cart.ROM[index]);
+            }
+        } else {
+            Debug.LogError("Unhandled Mapper0 read at address: " + address);
+            return 0;
+        }
+    }
+
+    public override void Write(uint16 address, uint8 value){
+        // fuck
+    }
 }
 
 //##############################################################################
@@ -70,33 +120,31 @@ public class EmulatorMapper1 : EmulatorMapper {
         if(address < 0x2000){
             uint16 bank = address / 0x1000;
             uint16 offset = address % 0x1000;
-            // return cart.CHR[CHROffsets[bank] + offset];
+            return cart.CHR[CHROffsets[bank] + offset];
         } else if(address > 0x8000){
             address = address - 0x8000;
             uint16 bank = address / 0x4000;
             uint16 offset = address % 0x4000;
             // Debug.Log("VALUE: " + (cart.PRG[PRGOffsets[bank] + offset]) + " at index " + (PRGOffsets[bank] + offset));
-            // return cart.PRG[PRGOffsets[bank] + offset];
+            return cart.PRG[PRGOffsets[bank] + offset];
         } else if(address > 0x6000){
             return cart.SRAM[address - 0x6000];
         } else {
             Debug.LogError("Unhandled Mapper1 read at address: " + address);
             return 0;
         }
-
-        return 0;
     }
 
     public override void Write(uint16 address, uint8 value){
         if(address < 0x2000){
             uint16 bank = address / 0x1000;
             uint16 offset = address % 0x1000;
-            // cart.CHR[CHROffsets[bank] + offset] = value;
+            cart.CHR[CHROffsets[bank] + offset] = value;
         } else if(address > 0x8000){
             address = address - 0x8000;
             uint16 bank = address / 0x4000;
             uint16 offset = address % 0x4000;
-            // cart.PRG[PRGOffsets[bank] + offset] = value;
+            cart.PRG[PRGOffsets[bank] + offset] = value;
         } else if(address > 0x6000){
             cart.SRAM[address - 0x6000] = value;
         } else {
@@ -236,17 +284,15 @@ public class EmulatorMapper2 : EmulatorMapper {
     public override uint8 Read(uint16 address){
         Debug.Log("Mapper2 reading address: " + address);
         if(address < 0x2000){
-            return (uint8)(cart.CHR[address]);
+            return cart.CHR[address];
         } else if(address >= 0xC000){
             uint16 index = (prgBank2 * 0x4000) + (address - 0xC0000);
             Debug.Log(index);
             Debug.Log(cart.prgCount);
-            // how the fuck is this supposed to work? 0xC000 -> 0xC000 from the index bullshit above
-            // but PRG is way less than 0xC000...?
-            return (uint8)(cart.PRG[index]);
+            return cart.PRG[index];
         } else if(address >= 0x8000){
             uint16 index = (prgBank1 * 0x4000) + (address - 0xC0000);
-            return (uint8)(cart.PRG[index]);
+            return cart.PRG[index];
         } else if(address >= 0x6000){
             uint16 index = address - 0x6000;
             return cart.SRAM[index];

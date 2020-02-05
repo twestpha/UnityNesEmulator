@@ -21,6 +21,13 @@ public class EmulatorCartridgeHeader {
         Control2 = raw[7];
 
         numRAM   = raw[8];
+        // Unused 9
+        // Unused 10
+        // Unused 11
+        // Unused 12
+        // Unused 13
+        // Unused 14
+        // Unused 14
     }
 
     public bool Valid(){
@@ -31,28 +38,33 @@ public class EmulatorCartridgeHeader {
 public class EmulatorCartridge {
     public const int SAVE_RAM_SIZE = 0x2000;
 
-    public byte[] PRG;
-    public byte[] CHR;
+    public uint8[] PRG;
+    public uint8[] CHR;
     public uint8[] SRAM;
 
     uint8 mapper;
     uint8 mirror;
     uint8 battery;
 
-    byte[] cartMem;
+    private byte[] raw;
+    public uint8[] ROM;
 
+    public int romCount;
     public int prgCount;
     public int chrCount;
 
     int prgCopyProgress;
     int chrCopyProgress;
+    int romCopyProgress;
 
-    public EmulatorCartridge(byte[] raw){
-        cartMem = raw;
+    public EmulatorCartridge(byte[] raw_){
+        raw = raw_;
+        romCount = raw.Length - 16;
+        ROM = new uint8[romCount];
 
         SRAM = new uint8[SAVE_RAM_SIZE];
 
-        EmulatorCartridgeHeader header = new EmulatorCartridgeHeader(cartMem);
+        EmulatorCartridgeHeader header = new EmulatorCartridgeHeader(raw_);
 
         // verify header magic number
         if(!header.Valid()){
@@ -86,41 +98,43 @@ public class EmulatorCartridge {
 
         // // read prg-rom bank(s)
         prgCount = header.numPRG * 16384;
-        PRG = raw;
-        // PRG = new uint8[prgCount];
-        // prgCopyProgress = 0;
+        PRG = new uint8[prgCount];
+        prgCopyProgress = 0;
         // Debug.Log("PRG Count: " + header.numPRG);
 
         // read chr-rom bank(s)
         chrCount = header.numCHR * 8192;
-        CHR = raw;
-        // CHR = new uint8[chrCount];
-        // chrCopyProgress = 0;
+        CHR = new uint8[chrCount];
+        chrCopyProgress = 0;
         // Debug.Log("CHR Count: " + header.numCHR );
 
         // provide chr-rom/ram if not in file
         if(header.numCHR == 0){
             chrCount = 8192; // Is this needed? Probably...?
-            // CHR = new uint8[8192];
+            CHR = new uint8[8192];
         }
     }
 
     public bool CopyComplete(){
-        // return (prgCopyProgress == prgCount) && (chrCopyProgress == chrCount);
-        return true;
+        return (prgCopyProgress == prgCount) && (chrCopyProgress == chrCount) && (romCopyProgress == romCount);
     }
 
     public void ContinueMemoryCopy(){
-        // for(int i = 0; i < prgCount; ++i){
-        //     PRG[i] = (uint8)(cartMem[i]);
-        //     prgCopyProgress++;
-        // }
-        // // Debug.Log("PRG Copy Progress: " + prgCopyProgress);
-        //
-        // for(int i = 0; i < chrCount; ++i){
-        //     PRG[i] = (uint8)(cartMem[i]);
-        //     chrCopyProgress++;
-        // }
+        for(int i = 0; i < prgCount; ++i){
+            PRG[i] = (uint8)(ROM[i]);
+            prgCopyProgress++;
+        }
+        // Debug.Log("PRG Copy Progress: " + prgCopyProgress);
+
+        for(int i = 0; i < chrCount; ++i){
+            PRG[i] = (uint8)(ROM[i]);
+            chrCopyProgress++;
+        }
+
+        for(int i = 0; i < romCount; ++i){
+            ROM[i] = raw[i + 16];
+            romCopyProgress++;
+        }
         // Debug.Log("CHR Copy Progress: " + chrCopyProgress);
     }
 
