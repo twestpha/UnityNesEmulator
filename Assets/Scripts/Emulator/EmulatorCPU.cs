@@ -1,6 +1,7 @@
 using UnityEngine;
 
 public enum AddressingMode {
+    UNUSED,
     Absolute,
     AbsoluteX,
     AbsoluteY,
@@ -182,14 +183,14 @@ public class EmulatorCPU {
     // Flags
     uint8 C, Z, I, D, B, U, V, N;
 
-    ShittyMemory mem;
+    EmulatorCPUMemory mem;
     Interrupt interrupt;
     uint32 stall;
 
     public delegate void InstructionFunction(Instruction inst);
     private InstructionFunction[] functionTable;
 
-    public EmulatorCPU(ShittyMemory cpuMemory_){
+    public EmulatorCPU(EmulatorCPUMemory cpuMemory_){
         mem = cpuMemory_;
         CreateFunctionTable();
         // Reset();
@@ -234,7 +235,7 @@ public class EmulatorCPU {
 
     public void Reset(){
         // PC = Read16(PC_RESET_ADDRESS);
-        PC = 0;
+        PC = 0xC000;
         Debug.Log("Resetting PC: " + PC);
         SP = SP_RESET;
         SetFlags(FLAGS_RESET_VALUE);
@@ -385,7 +386,7 @@ public class EmulatorCPU {
         Debug.Log("STEP ------------------------------------");
         Debug.Log("[" + PC + "] => " + opcode + " (" + INSTRUCTION_NAMES[opcode] + ")");
 
-        AddressingMode mode = (AddressingMode)((int)INSTRUCTION_MODES[opcode]);
+        AddressingMode mode = (AddressingMode)((int)INSTRUCTION_MODES[opcode]); // THIS IS WRONG LALALALAL
 
         uint16 address = 0;
         bool pageCrossed = false;

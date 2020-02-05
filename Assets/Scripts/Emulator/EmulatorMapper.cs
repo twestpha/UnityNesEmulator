@@ -70,31 +70,33 @@ public class EmulatorMapper1 : EmulatorMapper {
         if(address < 0x2000){
             uint16 bank = address / 0x1000;
             uint16 offset = address % 0x1000;
-            return cart.CHR[CHROffsets[bank] + offset];
+            // return cart.CHR[CHROffsets[bank] + offset];
         } else if(address > 0x8000){
             address = address - 0x8000;
             uint16 bank = address / 0x4000;
             uint16 offset = address % 0x4000;
             // Debug.Log("VALUE: " + (cart.PRG[PRGOffsets[bank] + offset]) + " at index " + (PRGOffsets[bank] + offset));
-            return cart.PRG[PRGOffsets[bank] + offset];
+            // return cart.PRG[PRGOffsets[bank] + offset];
         } else if(address > 0x6000){
             return cart.SRAM[address - 0x6000];
         } else {
             Debug.LogError("Unhandled Mapper1 read at address: " + address);
             return 0;
         }
+
+        return 0;
     }
 
     public override void Write(uint16 address, uint8 value){
         if(address < 0x2000){
             uint16 bank = address / 0x1000;
             uint16 offset = address % 0x1000;
-            cart.CHR[CHROffsets[bank] + offset] = value;
+            // cart.CHR[CHROffsets[bank] + offset] = value;
         } else if(address > 0x8000){
             address = address - 0x8000;
             uint16 bank = address / 0x4000;
             uint16 offset = address % 0x4000;
-            cart.PRG[PRGOffsets[bank] + offset] = value;
+            // cart.PRG[PRGOffsets[bank] + offset] = value;
         } else if(address > 0x6000){
             cart.SRAM[address - 0x6000] = value;
         } else {
@@ -234,15 +236,17 @@ public class EmulatorMapper2 : EmulatorMapper {
     public override uint8 Read(uint16 address){
         Debug.Log("Mapper2 reading address: " + address);
         if(address < 0x2000){
-            return cart.CHR[address];
+            return (uint8)(cart.CHR[address]);
         } else if(address >= 0xC000){
             uint16 index = (prgBank2 * 0x4000) + (address - 0xC0000);
             Debug.Log(index);
             Debug.Log(cart.prgCount);
-            return cart.PRG[index];
+            // how the fuck is this supposed to work? 0xC000 -> 0xC000 from the index bullshit above
+            // but PRG is way less than 0xC000...?
+            return (uint8)(cart.PRG[index]);
         } else if(address >= 0x8000){
             uint16 index = (prgBank1 * 0x4000) + (address - 0xC0000);
-            return cart.PRG[index];
+            return (uint8)(cart.PRG[index]);
         } else if(address >= 0x6000){
             uint16 index = address - 0x6000;
             return cart.SRAM[index];
@@ -254,7 +258,7 @@ public class EmulatorMapper2 : EmulatorMapper {
 
     public override void Write(uint16 address, uint8 value){
         if(address < 0x2000){
-            cart.CHR[address] = value;
+            cart.CHR[address] = (byte)(value);
         } else if(address >= 0x8000){
             prgBank1 = value % prgBanks;
         } else if(address >= 0x6000){

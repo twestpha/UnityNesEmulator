@@ -19,7 +19,6 @@ public class Emulator : MonoBehaviour {
     private EmulatorMapperCore mapper;
     private EmulatorCartridge cart;
     private EmulatorCPUMemory cpuMem;
-    private ShittyMemory shitMem;
     private EmulatorCPU cpu;
 
     // Debug Crap
@@ -31,31 +30,30 @@ public class Emulator : MonoBehaviour {
     void Start(){
         RAM = new uint8[RAM_SIZE];
 
-        // cart = new EmulatorCartridge(ROMFile.bytes);
-        // cartLoadComplete = false;
+        cart = new EmulatorCartridge(ROMFile.bytes);
+        cartLoadComplete = false;
 
-        // mapper = new EmulatorMapperCore(cart);
+        mapper = new EmulatorMapperCore(cart);
 
-        // cpuMem = new EmulatorCPUMemory(RAM, mapper);
-        shitMem = new ShittyMemory(RAM, ROMFile.bytes);
-        cpu = new EmulatorCPU(shitMem);
+        cpuMem = new EmulatorCPUMemory(RAM, mapper);
+        cpu = new EmulatorCPU(cpuMem);
     }
 
     void Update(){
         // This must be complete before the rest of the emu runs
-        // cartLoadComplete = cart.CopyComplete();
-        // if(!cartLoadComplete){
-        //     cart.ContinueMemoryCopy();
-        //     cpu.Reset();
-        //
-        //     PC = cpu.GetPC();
-        //     A = cpu.GetA();
-        //     X = cpu.GetX();
-        //     Y = cpu.GetY();
-        //     SP = cpu.GetSP(); // TODO Bug-check Mapper & Memory read/write, implement Mapper0, test & debug from there.
-        // }
+        cartLoadComplete = cart.CopyComplete();
+        if(!cartLoadComplete){
+            cart.ContinueMemoryCopy();
+            cpu.Reset();
 
-        if(ShouldStep){
+            PC = cpu.GetPC();
+            A = cpu.GetA();
+            X = cpu.GetX();
+            Y = cpu.GetY();
+            SP = cpu.GetSP();
+        }
+
+        if(cartLoadComplete && ShouldStep){
             Step();
             // StepSeconds(Time.deltaTime);
             ShouldStep = false;
@@ -69,7 +67,6 @@ public class Emulator : MonoBehaviour {
         // TODO get PPU... texture? Then draw to set-aside texture that's rendering to a canvas? Sure, why not...
     }
 
-    // Something
     public void Reset(){
         cpu.Reset();
     }
@@ -80,7 +77,7 @@ public class Emulator : MonoBehaviour {
 
         for(int i = 0; i < ppuCycles; ++i){
             // PPU.Step();
-            // mapper.Step();
+            mapper.Step();
         }
 
         for(int i = 0; i < cpuCycles; ++i){

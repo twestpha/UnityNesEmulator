@@ -31,8 +31,8 @@ public class EmulatorCartridgeHeader {
 public class EmulatorCartridge {
     public const int SAVE_RAM_SIZE = 0x2000;
 
-    public uint8[] PRG;
-    public uint8[] CHR;
+    public byte[] PRG;
+    public byte[] CHR;
     public uint8[] SRAM;
 
     uint8 mapper;
@@ -86,38 +86,41 @@ public class EmulatorCartridge {
 
         // // read prg-rom bank(s)
         prgCount = header.numPRG * 16384;
-        PRG = new uint8[prgCount];
-        prgCopyProgress = 0;
+        PRG = raw;
+        // PRG = new uint8[prgCount];
+        // prgCopyProgress = 0;
         // Debug.Log("PRG Count: " + header.numPRG);
 
         // read chr-rom bank(s)
         chrCount = header.numCHR * 8192;
-        CHR = new uint8[chrCount];
-        chrCopyProgress = 0;
+        CHR = raw;
+        // CHR = new uint8[chrCount];
+        // chrCopyProgress = 0;
         // Debug.Log("CHR Count: " + header.numCHR );
 
         // provide chr-rom/ram if not in file
         if(header.numCHR == 0){
             chrCount = 8192; // Is this needed? Probably...?
-            CHR = new uint8[8192];
+            // CHR = new uint8[8192];
         }
     }
 
     public bool CopyComplete(){
-        return (prgCopyProgress == prgCount) && (chrCopyProgress == chrCount);
+        // return (prgCopyProgress == prgCount) && (chrCopyProgress == chrCount);
+        return true;
     }
 
     public void ContinueMemoryCopy(){
-        for(int i = 0; i < prgCount; ++i){
-            PRG[i] = (uint8)(cartMem[i]);
-            prgCopyProgress++;
-        }
-        // Debug.Log("PRG Copy Progress: " + prgCopyProgress);
-
-        for(int i = 0; i < chrCount; ++i){
-            PRG[i] = (uint8)(cartMem[i]);
-            chrCopyProgress++;
-        }
+        // for(int i = 0; i < prgCount; ++i){
+        //     PRG[i] = (uint8)(cartMem[i]);
+        //     prgCopyProgress++;
+        // }
+        // // Debug.Log("PRG Copy Progress: " + prgCopyProgress);
+        //
+        // for(int i = 0; i < chrCount; ++i){
+        //     PRG[i] = (uint8)(cartMem[i]);
+        //     chrCopyProgress++;
+        // }
         // Debug.Log("CHR Copy Progress: " + chrCopyProgress);
     }
 

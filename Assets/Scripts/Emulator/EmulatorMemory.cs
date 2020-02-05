@@ -9,24 +9,6 @@ public class EmulatorMemory {
     public virtual void Write(uint16 address, uint8 value){}
 }
 
-public class ShittyMemory {
-    private uint8[] RAM;
-    private byte[] ROM;
-
-    public ShittyMemory(uint8[] RAM_, byte[] ROM_){
-        RAM = RAM_;
-        ROM = ROM_;
-    }
-
-    public virtual uint8 Read(uint16 address){
-        return (uint8)(ROM[address]);
-    }
-
-    public virtual void Write(uint16 address, uint8 value){
-        // No writing for now...
-    }
-}
-
 //##############################################################################
 // EmulatorCPUMemory
 //##############################################################################
