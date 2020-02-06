@@ -50,10 +50,7 @@ public class EmulatorMapper0 : EmulatorMapper {
     }
 
     public override uint8 Read(uint16 address){
-        // NESTest: Should be these first instruction starting at 0xC000 (Virtual)
-        // 00:C000:4C F5 C5  JMP $C5F5
-        // 0xC000 maps to 0x0010 in ROM in FCEUX, which is really just the thing without the header...?
-        // Do I have to remove the header from ROM?
+        // From https://wiki.nesdev.com/w/index.php/NROM
 
         if(address >= 0x6000 && address <= 0x7FFF){
             // CPU $6000-$7FFF: Family Basic only: PRG RAM, mirrored as necessary to fill entire 8 KiB window, write protectable with an external switch
@@ -61,22 +58,14 @@ public class EmulatorMapper0 : EmulatorMapper {
             return cart.PRG[index];
         } else if(address >= 0x8000 && address <= 0xBFFF){
             // CPU $8000-$BFFF: First 16 KB of ROM.
-            return (uint8)(cart.ROM[address - 0x8000]);
+            return cart.ROM[address - 0x8000];
         } else if(address >= 0xC000 && address <= 0xFFFF){
-
             // CPU $C000-$FFFF: Last 16 KB of ROM (NROM-256) or mirror of $8000-$BFFF (NROM-128).
-            // This is bugged, I need a better way to detect "NROM-128". I assumed ROM size determined it, but probably not, huh
-            // they kind of didn't have a *.count method to check. But it was hardware... probably just a fucking mysterious bit somewhere.
             if(false && cart.romCount > 0x4000){
-                // Debug.Log("last 16: " + address);
-                // Debug.Log("Rom Length: " + (uint16)(cart.romCount));
-                // Debug.Log("actual index: " + (uint16)(address - 0x8000));
-                return (uint8)(cart.ROM[address - 0x8000]);
+                // This branch is never taken - not sure how to detect NROM-256
+                return cart.ROM[address - 0x8000];
             } else {
-                int index = address - 0xC000; // does this work?
-                // Debug.Log("mirror of 0x8000: " + address);
-                // Debug.Log("actual index: " + (uint16)(index));
-                return (uint8)(cart.ROM[index]);
+                return cart.ROM[address - 0xC000];
             }
         } else {
             Debug.LogError("Unhandled Mapper0 read at address: " + address);
@@ -85,7 +74,8 @@ public class EmulatorMapper0 : EmulatorMapper {
     }
 
     public override void Write(uint16 address, uint8 value){
-        // fuck
+        // Should never write to a Mapper0, has no state
+        Debug.LogError("Unhandled Mapper0 write at address: " + address);
     }
 }
 

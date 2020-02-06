@@ -27,7 +27,7 @@ public class EmulatorCartridgeHeader {
         // Unused 12
         // Unused 13
         // Unused 14
-        // Unused 14
+        // Unused 15
     }
 
     public bool Valid(){
@@ -110,7 +110,7 @@ public class EmulatorCartridge {
 
         // provide chr-rom/ram if not in file
         if(header.numCHR == 0){
-            chrCount = 8192; // Is this needed? Probably...?
+            chrCount = 8192;
             CHR = new uint8[8192];
         }
     }
@@ -124,7 +124,6 @@ public class EmulatorCartridge {
             PRG[i] = (uint8)(ROM[i]);
             prgCopyProgress++;
         }
-        // Debug.Log("PRG Copy Progress: " + prgCopyProgress);
 
         for(int i = 0; i < chrCount; ++i){
             PRG[i] = (uint8)(ROM[i]);
@@ -135,7 +134,6 @@ public class EmulatorCartridge {
             ROM[i] = raw[i + 16];
             romCopyProgress++;
         }
-        // Debug.Log("CHR Copy Progress: " + chrCopyProgress);
     }
 
     public int GetMapper(){

@@ -1,12 +1,14 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Threading;
 
 public class Emulator : MonoBehaviour {
     public const int RAM_SIZE = 2048;
     public const int CPU_FREQUENCY = 1789773;
 
     public TextAsset ROMFile;
+    public RenderTexture emulatorDisplay;
 
 	// APU         *APU
 	// PPU         *PPU
@@ -19,10 +21,9 @@ public class Emulator : MonoBehaviour {
     private EmulatorCartridge cart;
     private EmulatorCPUMemory cpuMem;
     private EmulatorCPU cpu;
+    private EmulatorPPUMemory ppuMem;
 
     // Debug Crap
-    public bool ShouldStep;
-
     [Header("Program Counter")]
     public int PC;
     [Header("Registers")]
@@ -42,33 +43,58 @@ public class Emulator : MonoBehaviour {
 
     bool cartLoadComplete;
 
+    float dt;
+    Thread emuUpdate;
+    public bool emulatorStepping;
+
     void Start(){
         RAM = new uint8[RAM_SIZE];
 
+        // Setup cart with raw bytes
         cart = new EmulatorCartridge(ROMFile.bytes);
         cartLoadComplete = false;
 
+        // Setup mapper with cart rom
         mapper = new EmulatorMapperCore(cart);
 
+        // Setup cpu memory and cpu with mapper, ram, and memory
         cpuMem = new EmulatorCPUMemory(RAM, mapper);
         cpu = new EmulatorCPU(cpuMem);
+
+        // This relies on the PPU to be set up (or at least exist?)
+        ppuMem = new EmulatorPPUMemory(cart, mapper);
+
+        // Setup thread and prevent it from running until cart loaded
+        emulatorStepping = false;
+        emuUpdate = new Thread(UpdateEmulator);
+        emuUpdate.Start();
+    }
+
+    void UpdateEmulator(){
+        while(true){
+            while(!emulatorStepping){}
+
+            emulatorStepping = false;
+
+            StepSeconds(dt);
+            UpdateDebugVariables();
+        }
     }
 
     void Update(){
         // This must be complete before the rest of the emu runs
-        cartLoadComplete = cart.CopyComplete();
         if(!cartLoadComplete){
             cart.ContinueMemoryCopy();
-            cpu.Reset();
-            UpdateDebugVariables();
+            cartLoadComplete = cart.CopyComplete();
+
+            if(cartLoadComplete){
+                Reset();
+            }
         }
 
-        if(cartLoadComplete /*&& ShouldStep*/){
-            Step();
-            // StepSeconds(Time.deltaTime);
-            ShouldStep = false;
-            UpdateDebugVariables();
-        }
+        // Last dt is finished, update starts the next one
+        dt = Time.deltaTime;
+        emulatorStepping = cartLoadComplete;
 
         // TODO get PPU... texture? Then draw to set-aside texture that's rendering to a canvas? Sure, why not...
     }
@@ -109,19 +135,8 @@ public class Emulator : MonoBehaviour {
         return cpuCycles;
     }
 
-    public int StepFrame(){
-        // int cpuCycles = 0;
-        // int prevFrame = PPU.Frame();
-        // int prevFrame = 0;
-        // while(prevFrame == PPU.Frame()){
-        //     cpuCycles += Step();
-        // }
-        // return cpuCycles;
-        return 0;
-    }
-
     public void StepSeconds(float dt){
-        int cycles = (int)(CPU_FREQUENCY * dt);
+        long cycles = (long)(CPU_FREQUENCY * dt);
         while(cycles > 0){
             cycles -= Step();
         }

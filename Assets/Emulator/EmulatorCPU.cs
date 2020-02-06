@@ -202,7 +202,6 @@ public class EmulatorCPU {
     public EmulatorCPU(EmulatorCPUMemory cpuMemory_){
         mem = cpuMemory_;
         CreateFunctionTable();
-        // Reset();
     }
 
     public void CreateFunctionTable(){
@@ -391,8 +390,8 @@ public class EmulatorCPU {
         interrupt = Interrupt.None;
 
         uint8 opcode = mem.Read(PC);
-        Debug.Log("STEP ------------------------------------");
-        Debug.Log("[" + PC + "] => " + opcode + " (" + INSTRUCTION_NAMES[opcode] + ")");
+        // Debug.Log("STEP ------------------------------------");
+        // Debug.Log("[" + PC + "] => " + opcode + " (" + INSTRUCTION_NAMES[opcode] + ")");
 
         AddressingMode mode = (AddressingMode)((int)INSTRUCTION_MODES[opcode]); // THIS IS WRONG LALALALAL
 
@@ -446,9 +445,9 @@ public class EmulatorCPU {
         inst.address = address;
         inst.pc = PC;
         inst.mode = mode;
-        Debug.Log("  Address: " + address);
-        Debug.Log("       PC: " + PC);
-        Debug.Log("     Mode: " + mode);
+        // Debug.Log("  Address: " + address);
+        // Debug.Log("       PC: " + PC);
+        // Debug.Log("     Mode: " + mode);
 
         functionTable[opcode](inst);
 

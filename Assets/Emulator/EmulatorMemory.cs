@@ -71,3 +71,72 @@ public class EmulatorCPUMemory : EmulatorMemory {
         }
     }
 }
+
+//##############################################################################
+// EmulatorCPUMemory
+//##############################################################################
+public class EmulatorPPUMemory : EmulatorMemory {
+    private EmulatorCartridge cart;
+    private EmulatorMapperCore mapper;
+
+    public EmulatorPPUMemory(EmulatorCartridge cart_, EmulatorMapperCore mapper_){
+        cart = cart_;
+        mapper = mapper_;
+    }
+
+    // const (
+    // 	MirrorHorizontal = 0
+    // 	MirrorVertical   = 1
+    // 	MirrorSingle0    = 2
+    // 	MirrorSingle1    = 3
+    // 	MirrorFour       = 4
+    // )
+
+    public static uint8[,] MIRROR_LOOKUP = {
+        {0, 0, 1, 1},
+        {0, 1, 0, 1},
+        {0, 0, 0, 0},
+        {1, 1, 1, 1},
+        {0, 1, 2, 3},
+    };
+
+    uint16 MirrorAddress(uint8 mode, uint16 address){
+        address = (address - 0x2000) % 0x1000;
+        uint16 table = address / 0x4000;
+        uint16 offset = address % 0x4000;
+        return 0x2000 + (MIRROR_LOOKUP[mode, table] * 0x0400) + offset;
+    }
+
+    public override uint8 Read(uint16 address){
+        address = address % 0x4000;
+
+        if(address < 0x2000){
+            return mapper.Read(address);
+        } else if(address < 0x3F00){
+            uint8 mode = cart.GetMirror();
+            // return mem.console.PPU.nameTableData[MirrorAddress(mode, address)%2048]
+            return 0;
+        } else if(address < 0x4000){
+            // return mem.console.PPU.readPalette(address % 32)
+            return 0;
+        } else {
+            Debug.LogError("Unhandled PPU read at address: " + address);
+            return 0;
+        }
+    }
+
+    public override void Write(uint16 address, uint8 value){
+        address = address % 0x4000;
+
+        if(address < 0x2000){
+            mapper.Write(address, value);
+        } else if(address < 0x3F00){
+            uint8 mode = cart.GetMirror();
+            // mem.console.PPU.nameTableData[MirrorAddress(mode, address)%2048] = value
+        } else if(address < 0x4000){
+            // mem.console.PPU.writePalette(address%32, value)
+        } else {
+            Debug.LogError("Unhandled PPU write at address: " + address);
+        }
+    }
+}
