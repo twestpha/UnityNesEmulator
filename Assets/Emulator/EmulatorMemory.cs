@@ -15,23 +15,29 @@ public class EmulatorMemory {
 public class EmulatorCPUMemory : EmulatorMemory {
     private uint8[] RAM;
     private EmulatorMapperCore mapper;
+    private EmulatorPPU ppu;
 
     public EmulatorCPUMemory(uint8[] RAM_, EmulatorMapperCore mapper_){
         RAM = RAM_;
         mapper = mapper_;
     }
 
+    public void SetPPU(EmulatorPPU ppu_){
+        ppu = ppu_;
+    }
+
     public override uint8 Read(uint16 address){
         if(address < 0x2000){
             return RAM[address % 0x0800];
         } else if(address < 0x4000){
-            // return PPU.readRegister(0x2000 + address%8)
+            return ppu.ReadRegister((address % 8) + 0x2000);
         } else if(address == 0x4014){
-            // return mem.console.PPU.readRegister(address)
+            return ppu.ReadRegister(address);
         } else if(address == 0x4015){
             // return mem.console.APU.readRegister(address)
         } else if(address == 0x4016){
             // return mem.console.Controller1.Read()
+            // return 0xFF; // Hold down all the buttons?
         } else if(address == 0x4017){
             // return mem.console.Controller2.Read()
         } else if(address < 0x6000){
@@ -50,11 +56,11 @@ public class EmulatorCPUMemory : EmulatorMemory {
         if(address < 0x2000){
             RAM[address % 0x0800] = value;
         } else if(address < 0x4000){
-            // mem.console.PPU.writeRegister(0x2000+address%8, value)
+            ppu.WriteRegister((address % 8) + 0x2000, value);
         } else if(address < 0x4014){
             // mem.console.APU.writeRegister(address, value)
         } else if(address == 0x4014){
-            // mem.console.PPU.writeRegister(address, value)
+            ppu.WriteRegister(address, value);
         } else if(address == 0x4015){
             // mem.console.APU.writeRegister(address, value)
         } else if(address == 0x4016){
@@ -116,11 +122,9 @@ public class EmulatorPPUMemory : EmulatorMemory {
             return mapper.Read(address);
         } else if(address < 0x3F00){
             uint8 mode = cart.GetMirror();
-            // return mem.console.PPU.nameTableData[MirrorAddress(mode, address)%2048]
-            return 0;
+            return ppu.nameTableData[MirrorAddress(mode, address) % 2048];
         } else if(address < 0x4000){
-            // return mem.console.PPU.readPalette(address % 32)
-            return 0;
+            return ppu.ReadPalette(address % 32);
         } else {
             Debug.LogError("Unhandled PPU read at address: " + address);
             return 0;
@@ -134,9 +138,9 @@ public class EmulatorPPUMemory : EmulatorMemory {
             mapper.Write(address, value);
         } else if(address < 0x3F00){
             uint8 mode = cart.GetMirror();
-            // mem.console.PPU.nameTableData[MirrorAddress(mode, address)%2048] = value
+            ppu.nameTableData[MirrorAddress(mode, address) % 2048] = value;
         } else if(address < 0x4000){
-            // mem.console.PPU.writePalette(address%32, value)
+            ppu.WritePalette(address % 32, value);
         } else {
             Debug.LogError("Unhandled PPU write at address: " + address);
         }

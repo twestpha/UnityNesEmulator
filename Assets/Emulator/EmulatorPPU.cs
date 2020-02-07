@@ -29,6 +29,17 @@ public class PixelBuffer {
     public void SetRGBA(int x, int y, Pixel rgba){
         buffer[x, y] = rgba;
     }
+
+    public Color GetRGBA(int x, int y){
+        Pixel pix = buffer[x, y];
+
+        return new Color(
+            (float)(pix.r) / 255.0f,
+            (float)(pix.g) / 255.0f,
+            (float)(pix.b) / 255.0f,
+            (float)(pix.a) / 255.0f
+        );
+    }
 }
 
 //##############################################################################
@@ -89,9 +100,9 @@ public class EmulatorPPU {
 
     // Storage
     uint8[] paletteData; // 32
-    uint8[] nameTableData; // 2048
+    public uint8[] nameTableData; // 2048
     uint8[] oamData; // 256
-	PixelBuffer front;
+	public PixelBuffer front;
     PixelBuffer back;
 
 	// PPU registers
@@ -118,10 +129,10 @@ public class EmulatorPPU {
 
 	// sprite temporary variables
     uint32 spriteCount;
-    uint32[] spritePatterns; // 8
-    uint8[] spritePositions; // 8
+    uint32[] spritePatterns;  // 8
+    uint8[] spritePositions;  // 8
     uint8[] spritePriorities; // 8
-    uint8[] spriteIndexes; // 8
+    uint8[] spriteIndexes;    // 8
 
 	// // $2000 PPUCTRL
 	uint8 flagNameTable;       // 0: $2000; 1: $2400; 2: $2800; 3: $2C00
@@ -197,7 +208,7 @@ public class EmulatorPPU {
         paletteData[address] = value;
     }
 
-    public uint8 readRegister(uint16 address){
+    public uint8 ReadRegister(uint16 address){
         if(address == 0x2002){
             return ReadStatus();
         } else if(address == 0x2004){
@@ -208,7 +219,7 @@ public class EmulatorPPU {
         return 0;
     }
 
-    public void writeRegister(uint16 address, uint8 value){
+    public void WriteRegister(uint16 address, uint8 value){
         register = value;
         if(address == 0x2000){
             WriteControl(value);

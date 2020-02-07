@@ -8,7 +8,7 @@ public class Emulator : MonoBehaviour {
     public const int CPU_FREQUENCY = 1789773;
 
     public TextAsset ROMFile;
-    public RenderTexture emulatorDisplay;
+    public Texture2D emulatorDisplay;
 
 	// APU         *APU
 	// Controller1 *Controller
@@ -26,6 +26,7 @@ public class Emulator : MonoBehaviour {
     // Debug Crap
     [Header("Program Counter")]
     public int PC;
+    public int cyclesLastFrame;
     [Header("Registers")]
     public int A;
     public int X;
@@ -60,10 +61,13 @@ public class Emulator : MonoBehaviour {
         cpuMem = new EmulatorCPUMemory(RAM, mapper);
         cpu = new EmulatorCPU(cpuMem);
 
-        // These of course rely on each other
+        // These rely on each other
         ppu = new EmulatorPPU(cpu, cpuMem);
         ppuMem = new EmulatorPPUMemory(cart, mapper, ppu);
         ppu.SetPPUMemory(ppuMem);
+
+        // And of course, cpuMem relies on ppu
+        cpuMem.SetPPU(ppu);
 
         // Setup thread and prevent it from running until cart fully loaded
         emulatorStepping = false;
@@ -78,7 +82,7 @@ public class Emulator : MonoBehaviour {
 
             emulatorStepping = false;
 
-            StepFrame();
+            cyclesLastFrame = StepFrame();
             UpdateDebugVariables();
         }
     }
@@ -94,11 +98,20 @@ public class Emulator : MonoBehaviour {
             }
         }
 
-        emulatorStepping = cartLoadComplete;
+        RenderPPUToDisplay();
 
-        // TODO get PPU... texture? Then draw to set-aside texture that's rendering to a canvas? Sure, why not...
-        // Yeah, I think we just grab the front buffer from the PPU and draw it...?
-        // Man there's gonna be a lot of bugs
+        // Then kick off the stepping again
+        emulatorStepping = cartLoadComplete;
+    }
+
+    void RenderPPUToDisplay(){
+        for(int y = 0; y < PixelBuffer.HEIGHT; ++y){
+            for(int x = 0; x < PixelBuffer.WIDTH; ++x){
+                emulatorDisplay.SetPixel(x, y, ppu.front.GetRGBA(x, y));
+            }
+        }
+
+        emulatorDisplay.Apply();
     }
 
     void UpdateDebugVariables(){

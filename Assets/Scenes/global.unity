@@ -327,7 +327,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   ROMFile: {fileID: 4900000, guid: ff489a953290a1f48b585676a40c873b, type: 3}
-  emulatorDisplay: {fileID: 8400000, guid: 2547040cd70b44a4dbc33230d737a407, type: 2}
+  emulatorDisplay: {fileID: 2800000, guid: 56da0be32ab74dc429cae75a09f5b223, type: 3}
   PC: 0
   A: 0
   X: 0
