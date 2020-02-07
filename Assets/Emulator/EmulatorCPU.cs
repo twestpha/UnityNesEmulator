@@ -168,6 +168,7 @@ public class EmulatorCPU {
     };
 
     uint64 cycles;
+    public uint64 GetCycles(){ return cycles; }
     uint16 PC;
     // Debug Crap
     public int GetPC(){ return (int)(PC); }
@@ -195,6 +196,7 @@ public class EmulatorCPU {
     EmulatorCPUMemory mem;
     Interrupt interrupt;
     uint32 stall;
+    public void AddStall(uint32 stall_){ stall += stall_; }
 
     public delegate void InstructionFunction(Instruction inst);
     private InstructionFunction[] functionTable;
@@ -247,8 +249,6 @@ public class EmulatorCPU {
         SP = SP_RESET;
         SetFlags(FLAGS_RESET_VALUE);
     }
-
-    // Some way to display opcode and registers to "debugger"
 
     //##########################################################################
     // 6502 Helper methods - secondary behavior of the CPU

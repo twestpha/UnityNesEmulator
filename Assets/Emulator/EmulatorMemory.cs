@@ -78,10 +78,12 @@ public class EmulatorCPUMemory : EmulatorMemory {
 public class EmulatorPPUMemory : EmulatorMemory {
     private EmulatorCartridge cart;
     private EmulatorMapperCore mapper;
+    private EmulatorPPU ppu;
 
-    public EmulatorPPUMemory(EmulatorCartridge cart_, EmulatorMapperCore mapper_){
+    public EmulatorPPUMemory(EmulatorCartridge cart_, EmulatorMapperCore mapper_, EmulatorPPU ppu_){
         cart = cart_;
         mapper = mapper_;
+        ppu = ppu_;
     }
 
     // const (

@@ -11,7 +11,6 @@ public class Emulator : MonoBehaviour {
     public RenderTexture emulatorDisplay;
 
 	// APU         *APU
-	// PPU         *PPU
 	// Controller1 *Controller
 	// Controller2 *Controller
 
@@ -22,6 +21,7 @@ public class Emulator : MonoBehaviour {
     private EmulatorCPUMemory cpuMem;
     private EmulatorCPU cpu;
     private EmulatorPPUMemory ppuMem;
+    private EmulatorPPU ppu;
 
     // Debug Crap
     [Header("Program Counter")]
@@ -43,7 +43,6 @@ public class Emulator : MonoBehaviour {
 
     bool cartLoadComplete;
 
-    float dt;
     Thread emuUpdate;
     public bool emulatorStepping;
 
@@ -61,10 +60,12 @@ public class Emulator : MonoBehaviour {
         cpuMem = new EmulatorCPUMemory(RAM, mapper);
         cpu = new EmulatorCPU(cpuMem);
 
-        // This relies on the PPU to be set up (or at least exist?)
-        ppuMem = new EmulatorPPUMemory(cart, mapper);
+        // These of course rely on each other
+        ppu = new EmulatorPPU(cpu, cpuMem);
+        ppuMem = new EmulatorPPUMemory(cart, mapper, ppu);
+        ppu.SetPPUMemory(ppuMem);
 
-        // Setup thread and prevent it from running until cart loaded
+        // Setup thread and prevent it from running until cart fully loaded
         emulatorStepping = false;
         emuUpdate = new Thread(UpdateEmulator);
         emuUpdate.Start();
@@ -72,11 +73,12 @@ public class Emulator : MonoBehaviour {
 
     void UpdateEmulator(){
         while(true){
+            // TODO put some yields in here?
             while(!emulatorStepping){}
 
             emulatorStepping = false;
 
-            StepSeconds(dt);
+            StepFrame();
             UpdateDebugVariables();
         }
     }
@@ -92,11 +94,11 @@ public class Emulator : MonoBehaviour {
             }
         }
 
-        // Last dt is finished, update starts the next one
-        dt = Time.deltaTime;
         emulatorStepping = cartLoadComplete;
 
         // TODO get PPU... texture? Then draw to set-aside texture that's rendering to a canvas? Sure, why not...
+        // Yeah, I think we just grab the front buffer from the PPU and draw it...?
+        // Man there's gonna be a lot of bugs
     }
 
     void UpdateDebugVariables(){
@@ -117,6 +119,7 @@ public class Emulator : MonoBehaviour {
 
     public void Reset(){
         cpu.Reset();
+        ppu.Reset();
     }
 
     public int Step(){
@@ -124,12 +127,24 @@ public class Emulator : MonoBehaviour {
         int ppuCycles = cpuCycles * 3;
 
         for(int i = 0; i < ppuCycles; ++i){
-            // PPU.Step();
+            ppu.Step();
             mapper.Step();
         }
 
-        for(int i = 0; i < cpuCycles; ++i){
+        // No APU for now
+        // for(int i = 0; i < cpuCycles; ++i){
             // APU.Step();
+        // }
+
+        return cpuCycles;
+    }
+
+    public int StepFrame(){
+        int cpuCycles = 0;
+        uint64 frame = ppu.GetFrame();
+
+        while(frame == ppu.GetFrame()){
+            cpuCycles += Step();
         }
 
         return cpuCycles;
