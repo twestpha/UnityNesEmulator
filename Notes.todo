@@ -1,0 +1,13 @@
+//##############################################################################
+// Debugging Notes
+//##############################################################################
+
+So - No graphics data is ever getting written or even accessed, based on the
+memory reads/writes...
+
+Is that a problem with reading the ROM? Is that a problem with executing the
+instructions?
+
+Because I know the NesTest rom is definitely writing to graphics memory somehow.
+
+Our little toy program wrote to OAM correctly, though...

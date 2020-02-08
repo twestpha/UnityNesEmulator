@@ -4450,8 +4450,8 @@ Transform:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 712581437}
   m_LocalRotation: {x: -0, y: -0, z: -0, w: 1}
-  m_LocalPosition: {x: 0, y: 0, z: 1}
-  m_LocalScale: {x: 1.066, y: 1, z: 1}
+  m_LocalPosition: {x: -0.655, y: 0.31, z: 1}
+  m_LocalScale: {x: 0.5, y: -0.5, z: 0.5}
   m_Children: []
   m_Father: {fileID: 963194228}
   m_RootOrder: 0
@@ -4487,7 +4487,7 @@ MeshRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 2100000, guid: 71cf0ed7796bd044a8872ea0ee14b699, type: 2}
+  - {fileID: 2100000, guid: 713fdda5ba90a7144b7e3456d9810f18, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -5721,23 +5721,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 43622ca9d893ea04a8738a14074e3bfc, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  ROMFile: {fileID: 4900000, guid: ff489a953290a1f48b585676a40c873b, type: 3}
+  ROMFile: {fileID: 4900000, guid: 2e32574b1e1368e4db1a375fc28b9faa, type: 3}
   emulatorDisplay: {fileID: 2800000, guid: 56da0be32ab74dc429cae75a09f5b223, type: 3}
-  PC: 0
-  cyclesLastFrame: 0
-  A: 0
-  X: 0
-  Y: 0
-  SP: 0
-  C: 0
-  Z: 0
-  I: 0
-  D: 0
-  B: 0
-  U: 0
-  V: 0
-  N: 0
-  emulatorStepping: 0
 --- !u!4 &998263208
 Transform:
   m_ObjectHideFlags: 0
