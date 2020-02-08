@@ -3,6 +3,8 @@ using System.Threading;
 using System.Diagnostics;
 using Nescafe.Mappers;
 
+using UnityEngine;
+
 namespace Nescafe
 {
     /// <summary>
@@ -55,8 +57,6 @@ namespace Nescafe
         /// </summary>
         /// <value><c>true</c> if the console has been stopped; otherwise, <c>false</c>.</value>
         public bool Stop { get; set; }
-        public bool Cont { get; set; }
-        public bool DrawReady { get; set; }
 
         // Used internally to determine if we've reached a new frame
         bool _frameEvenOdd;
@@ -128,15 +128,19 @@ namespace Nescafe
         /// Forces the console to call <see cref="T:Nescafe.Console.DrawAction"/>
         /// with current data from the PPU.
         /// </summary>
+        public int QueuedDraws { get; set; }
         public void DrawFrame()
         {
-            DrawReady = true;
+            QueuedDraws++;
+            // Stall until no draws queued
+            while(QueuedDraws > 1){}
             _frameEvenOdd = !_frameEvenOdd;
         }
 
         void GoUntilFrame()
         {
             bool orig = _frameEvenOdd;
+
             while (orig == _frameEvenOdd)
             {
                 int cpuCycles = Cpu.Step();
@@ -160,12 +164,7 @@ namespace Nescafe
 
             while (!Stop)
             {
-                Stopwatch frameWatch = Stopwatch.StartNew();
                 GoUntilFrame();
-                frameWatch.Stop();
-
-                while(!Cont && !Stop){}
-                Cont = false;
             }
         }
     }

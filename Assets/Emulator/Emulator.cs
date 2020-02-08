@@ -12,6 +12,9 @@ public class Emulator : MonoBehaviour {
     private Console console;
     private Color[] palette;
 
+    public float FPS;
+    private float lastframetime;
+
     void Start(){
         console = new Console();
 
@@ -24,7 +27,7 @@ public class Emulator : MonoBehaviour {
     }
 
     void Update(){
-        if(console.DrawReady){
+        if(console.QueuedDraws > 0){
             // https://docs.unity3d.com/ScriptReference/Texture2D.SetPixels.html maybe
 
             for(int i = 0; i < 256 * 240; ++i){
@@ -34,10 +37,13 @@ public class Emulator : MonoBehaviour {
                 Color color = palette[console.Ppu.BitmapData[i]];
                 emulatorDisplay.SetPixel(x, y, color);
             }
+            console.QueuedDraws--;
 
             emulatorDisplay.Apply();
-            console.DrawReady = false;
-            console.Cont = true;
+
+            // Fuck
+            FPS = 1 / (Time.time - lastframetime);
+            lastframetime = Time.time;
         } else {
             // Debug.Log("Skipped frame :|");
         }
@@ -141,62 +147,17 @@ public class Emulator : MonoBehaviour {
     }
 
     void StopConsole(){
-        console.Cont = false;
         console.Stop = true;
+        console.QueuedDraws = 0;
 
         emuUpdate.Join();
     }
 
     void StartConsole(){
-        console.Cont = true;
         console.Stop = false;
 
         emuUpdate = new Thread(console.Start);
+        emuUpdate.Priority = System.Threading.ThreadPriority.Highest;
         emuUpdate.Start();
     }
-
-/*
-    // Input
-    void OnKeyDown(object sender, KeyEventArgs e)
-    {
-        SetControllerButton(true, e);
-    }
-
-    void OnKeyUp(object sender, KeyEventArgs e)
-    {
-        SetControllerButton(false, e);
-    }
-
-    void SetControllerButton(bool state, KeyEventArgs e)
-    {
-        switch (e.KeyCode)
-        {
-            case Keys.Z:
-                _console.Controller.setButtonState(Controller.Button.A, state);
-                break;
-            case Keys.X:
-                _console.Controller.setButtonState(Controller.Button.B, state);
-                break;
-            case Keys.Left:
-                _console.Controller.setButtonState(Controller.Button.Left, state);
-                break;
-            case Keys.Right:
-                _console.Controller.setButtonState(Controller.Button.Right, state);
-                break;
-            case Keys.Up:
-                _console.Controller.setButtonState(Controller.Button.Up, state);
-                break;
-            case Keys.Down:
-                _console.Controller.setButtonState(Controller.Button.Down, state);
-                break;
-            case Keys.Q:
-                _console.Controller.setButtonState(Controller.Button.Start, state);
-                break;
-            case Keys.W:
-                _console.Controller.setButtonState(Controller.Button.Select, state);
-                break;
-        }
-    }
-}*/
-
 }
