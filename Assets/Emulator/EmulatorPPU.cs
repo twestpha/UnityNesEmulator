@@ -359,6 +359,7 @@ public class EmulatorPPU {
     // $4014: OAMDMA
     public void WriteDMA(uint8 value){
         uint16 address = new uint16(value) << 8;
+        Debug.Log("Writing DMA");
 
         for(int i = 0; i < 256; ++i){
             oamData[oamAddress] = cpuMem.Read(address);

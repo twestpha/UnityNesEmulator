@@ -47,6 +47,8 @@ public class Emulator : MonoBehaviour {
     Thread emuUpdate;
     public bool emulatorStepping;
 
+    private bool interlace;
+
     void Start(){
         RAM = new uint8[RAM_SIZE];
 
@@ -105,11 +107,20 @@ public class Emulator : MonoBehaviour {
     }
 
     void RenderPPUToDisplay(){
+        // This is super stupid slow..... not sure how to make faster.
+        // Probably try to cache the reads and don't alloc dealloc? Yeah...
+        // or just interlace muahahaha
+
+        int match = interlace ? 1 : 0;
         for(int y = 0; y < PixelBuffer.HEIGHT; ++y){
-            for(int x = 0; x < PixelBuffer.WIDTH; ++x){
-                emulatorDisplay.SetPixel(x, y, ppu.front.GetRGBA(x, y));
+            if(y % 2 == match){
+                for(int x = 0; x < PixelBuffer.WIDTH; ++x){
+                    emulatorDisplay.SetPixel(x, y, ppu.front.GetRGBA(x, y));
+                }
             }
         }
+
+        interlace = !interlace;
 
         emulatorDisplay.Apply();
     }

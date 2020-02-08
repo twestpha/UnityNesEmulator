@@ -43,7 +43,7 @@ public class EmulatorCPUMemory : EmulatorMemory {
         } else if(address < 0x6000){
             // I/O Registers...?
             Debug.Log("I/O Read?");
-        } else if(address > 0x6000){
+        } else if(address >= 0x6000){
             return mapper.Read(address);
         } else {
             Debug.LogError("Unhandled CPU read at address: " + address);
@@ -56,10 +56,12 @@ public class EmulatorCPUMemory : EmulatorMemory {
         if(address < 0x2000){
             RAM[address % 0x0800] = value;
         } else if(address < 0x4000){
+            Debug.Log("Writing PPU Something" + address);
             ppu.WriteRegister((address % 8) + 0x2000, value);
         } else if(address < 0x4014){
             // mem.console.APU.writeRegister(address, value)
         } else if(address == 0x4014){
+            Debug.Log("Writing PPU Something" + address);
             ppu.WriteRegister(address, value);
         } else if(address == 0x4015){
             // mem.console.APU.writeRegister(address, value)
@@ -70,7 +72,8 @@ public class EmulatorCPUMemory : EmulatorMemory {
             // mem.console.APU.writeRegister(address, value)
         } else if(address < 0x6000){
             // I/O Registers...?
-        } else if(address > 0x6000){
+            Debug.Log("I/O Read?");
+        } else if(address >= 0x6000){
             mapper.Write(address, value);
         } else {
             Debug.LogError("Unhandled CPU write at address: " + address);
@@ -117,6 +120,7 @@ public class EmulatorPPUMemory : EmulatorMemory {
 
     public override uint8 Read(uint16 address){
         address = address % 0x4000;
+        Debug.Log("Reading ANYTHING from ppumem");
 
         if(address < 0x2000){
             return mapper.Read(address);
@@ -138,8 +142,10 @@ public class EmulatorPPUMemory : EmulatorMemory {
             mapper.Write(address, value);
         } else if(address < 0x3F00){
             uint8 mode = cart.GetMirror();
+            Debug.Log("Writing name table: " + address);
             ppu.nameTableData[MirrorAddress(mode, address) % 2048] = value;
         } else if(address < 0x4000){
+            Debug.Log("Writing palette: " + address);
             ppu.WritePalette(address % 32, value);
         } else {
             Debug.LogError("Unhandled PPU write at address: " + address);
