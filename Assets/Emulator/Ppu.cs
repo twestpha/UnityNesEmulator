@@ -40,6 +40,7 @@ namespace Nescafe
 
         // Address of pattern table used for background
         ushort _bgPatternTableAddress;
+        public ushort GetBGPatternTableAddress(){ return _bgPatternTableAddress; }
 
         // Base sprite pattern table address
         ushort _spritePatternTableAddress;
@@ -294,7 +295,7 @@ namespace Nescafe
             return (v >> 5) & 0x1f;
         }
 
-        int FineY()
+        public int FineY()
         {
             return (v >> 12) & 0x7;
         }
@@ -313,13 +314,12 @@ namespace Nescafe
             else yAddr = (ushort)(patternAddr + 16 + (yPos - 8)); // Go to next tile for 8x16 sprites
 
             // Read the 2 bytes in the bitfield for the y coordinate
-            byte[] pattern = new byte[2];
-            pattern[0] = _memory.Read(yAddr);
-            pattern[1] = _memory.Read((ushort)(yAddr + 8));
+            byte pattern_0 = _memory.Read(yAddr);
+            byte pattern_1 = _memory.Read((ushort)(yAddr + 8));
 
             // Extract correct bits based on x coordinate
-            byte loBit = (byte)((pattern[0] >> (7 - xPos)) & 1);
-            byte hiBit = (byte)((pattern[1] >> (7 - xPos)) & 1);
+            byte loBit = (byte)((pattern_0 >> (7 - xPos)) & 1);
+            byte hiBit = (byte)((pattern_1 >> (7 - xPos)) & 1);
 
             return ((hiBit << 1) | loBit) & 0x03;
         }
@@ -366,6 +366,7 @@ namespace Nescafe
 
         void EvalSprites()
         {
+            // PERFORMANCE not sure if these are necessary
             Array.Clear(_sprites, 0, _sprites.Length);
             Array.Clear(_spriteIndicies, 0, _spriteIndicies.Length);
 
@@ -676,6 +677,7 @@ namespace Nescafe
         }
 
         // $2000
+        // PERFORMANCE These could be made faster
         void WritePpuCtrl(byte data)
         {
             _flagBaseNametableAddr = (byte)(data & 0x3);
@@ -697,6 +699,7 @@ namespace Nescafe
         }
 
         // $2001
+        // PERFORMANCE These could be made faster
         void WritePpuMask(byte data)
         {
             _flagGreyscale = (byte)(data & 1);

@@ -10,10 +10,13 @@ public class Emulator : MonoBehaviour {
     private Thread emuUpdate;
 
     private Console console;
+    public Console GetConsole(){ return console; }
     private Color[] palette;
 
     public float FPS;
     private float lastframetime;
+
+    public bool started;
 
     void Start(){
         console = new Console();
@@ -151,6 +154,14 @@ public class Emulator : MonoBehaviour {
         console.QueuedDraws = 0;
 
         emuUpdate.Join();
+
+        for(int i = 0; i < 256 * 240; ++i){
+            int x = i % 256;
+            int y = i / 256;
+            emulatorDisplay.SetPixel(x, y, Color.black);
+        }
+
+        emulatorDisplay.Apply();
     }
 
     void StartConsole(){
@@ -159,5 +170,7 @@ public class Emulator : MonoBehaviour {
         emuUpdate = new Thread(console.Start);
         emuUpdate.Priority = System.Threading.ThreadPriority.Highest;
         emuUpdate.Start();
+
+        started = true;
     }
 }
