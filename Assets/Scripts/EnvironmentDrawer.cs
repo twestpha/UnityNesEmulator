@@ -2,12 +2,6 @@
 using System.Collections.Generic;
 using UnityEngine;
 
-// TODO list of "matches" and corresponding prefab types for easy unity entry
-// at start, setup mapping from long -> prefab using the above info
-// And also keep a big long[] of tile ids and update it... every frame? Often?
-// Maybe alternate frames between refreshing tilemap and "drawing" prefabs to screen
-// Only redraw dirty ones :D
-
 [System.Serializable]
 public struct EnvironmentID {
     public ushort idA;
@@ -62,6 +56,7 @@ public class EnvironmentDrawer : MonoBehaviour {
     // private Dictionary<EnvironmentID, GameObject> mapping;
 
     private bool started = false;
+    private int redraw = 0;
 
     private Emulator emu;
     private Nescafe.PpuMemory ppuMem;
@@ -81,6 +76,8 @@ public class EnvironmentDrawer : MonoBehaviour {
 
         ids = new EnvironmentID[64, 64];
         instances = new GameObject[64, 64];
+
+        redraw = 0;
 
         // mapping = new Dictionary<EnvironmentID, GameObject>();
         // for(int i = 0; i < matches.Length; ++i){
@@ -122,6 +119,12 @@ public class EnvironmentDrawer : MonoBehaviour {
         }
 
         if(started){
+            redraw++;
+            if(redraw < 4){
+                return;
+            }
+            redraw = 0;
+
             int updateTiles = 0;
             EnvironmentID newId = new EnvironmentID(0, 0, 0, 0);
 
