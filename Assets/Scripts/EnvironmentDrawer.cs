@@ -55,6 +55,8 @@ public class EnvironmentDrawer : MonoBehaviour {
 
     public EnvironmentMatch[] matches;
 
+    public GameObject blankTile;
+
     private EnvironmentID[,] ids;
     private GameObject[,] instances;
     // private Dictionary<EnvironmentID, GameObject> mapping;
@@ -153,12 +155,13 @@ public class EnvironmentDrawer : MonoBehaviour {
 
                         if(match){
                             // Debug.Log("Matched Tile! " + newId.idA + ", " + newId.idB + ", " + newId.idC + ", " + newId.idD);
-
                             GameObject newInstance = Object.Instantiate(match, nameTableOrigin.transform);
                             newInstance.transform.localPosition = new Vector3(namex * 2.0f, 0.0f, namey * 2.0f);
                             instances[namex, namey] = newInstance;
                         } else {
-                            instances[namex, namey] = null;
+                            GameObject newInstance = Object.Instantiate(blankTile, nameTableOrigin.transform);
+                            newInstance.transform.localPosition = new Vector3(namex * 2.0f, 0.0f, namey * 2.0f);
+                            instances[namex, namey] = newInstance;
                         }
 
                     }
