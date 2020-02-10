@@ -32,6 +32,8 @@ public class EnvironmentMatch {
 }
 
 public class EnvironmentDrawer : MonoBehaviour {
+    public const int DRAW_SIZE = 32;
+
     // Rocks = 49, 165, 53, 102
     // Solid Wall = 1319, 46324, 2891, 54526
     // Vertical Wall = 0, 18557, 566, 123
@@ -74,8 +76,8 @@ public class EnvironmentDrawer : MonoBehaviour {
     void Start(){
         emu = GetComponent<Emulator>();
 
-        ids = new EnvironmentID[64, 64];
-        instances = new GameObject[64, 64];
+        ids = new EnvironmentID[DRAW_SIZE, DRAW_SIZE];
+        instances = new GameObject[DRAW_SIZE, DRAW_SIZE];
 
         redraw = 0;
 
@@ -128,25 +130,39 @@ public class EnvironmentDrawer : MonoBehaviour {
             int updateTiles = 0;
             EnvironmentID newId = new EnvironmentID(0, 0, 0, 0);
 
-            for(int namey = 0; namey < 64; ++namey){
-                for(int namex = 0; namex < 64; ++namex){
+            for(int namey = 0; namey < DRAW_SIZE; ++namey){
+                for(int namex = 0; namex < DRAW_SIZE; ++namex){
                     // The max of those -> ushort memory = (ushort)(0x2000 + (x * 2) + (y * 0x20 * 2));
                     // 0x2000 + (126) + (3776)
                     // should equal 0x2FBF
 
-                    EnvironmentID prevId = ids[namex, namey];
+                    // This is hand-fixed, so it's real fucky
+                    int remappedy = (DRAW_SIZE - 1) - namey;
+                    int remappedx = namex;
 
+                    // This isn't right... :/
+                    // if(remappedx < 16 && remappedy < 16){
+                    //     remappedx += 16;
+                    //     remappedy += 16;
+                    // } else if(remappedx >= 16 && remappedy >= 16){
+                    //     remappedx -= 16;
+                    //     remappedy -= 16;
+                    // }
+
+                    EnvironmentID prevId = ids[remappedx, remappedy];
+
+                    // This one needs "real" x and y
                     GetIdsForNameIndex(namex, namey, ref newId.idA, ref newId.idB, ref newId.idC, ref newId.idD);
                     if(newId != prevId){
                         // Honestly it's probably "cheapest" to just swap out the prefab right here
                         // i.e. only swap what changed
                         updateTiles++;
 
-                        if(instances[namex, namey]){
-                            Destroy(instances[namex, namey]);
+                        if(instances[remappedx, remappedy]){
+                            Destroy(instances[remappedx, remappedy]);
                         }
 
-                        ids[namex, namey] = newId;
+                        ids[remappedx, remappedy] = newId;
 
                         GameObject match = null;
                         for(int i = 0; i < matches.Length; ++i){
@@ -159,12 +175,12 @@ public class EnvironmentDrawer : MonoBehaviour {
                         if(match){
                             // Debug.Log("Matched Tile! " + newId.idA + ", " + newId.idB + ", " + newId.idC + ", " + newId.idD);
                             GameObject newInstance = Object.Instantiate(match, nameTableOrigin.transform);
-                            newInstance.transform.localPosition = new Vector3(namex * 2.0f, 0.0f, namey * 2.0f);
-                            instances[namex, namey] = newInstance;
+                            newInstance.transform.localPosition = new Vector3(remappedx * 2.0f, 0.0f, remappedy * 2.0f);
+                            instances[remappedx, remappedy] = newInstance;
                         } else {
                             GameObject newInstance = Object.Instantiate(blankTile, nameTableOrigin.transform);
-                            newInstance.transform.localPosition = new Vector3(namex * 2.0f, 0.0f, namey * 2.0f);
-                            instances[namex, namey] = newInstance;
+                            newInstance.transform.localPosition = new Vector3(remappedx * 2.0f, 0.0f, remappedy * 2.0f);
+                            instances[remappedx, remappedy] = newInstance;
                         }
 
                     }
