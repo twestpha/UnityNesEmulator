@@ -110,15 +110,15 @@ public class EnvironmentDrawer : MonoBehaviour {
     }
 
     void Update(){
-        if(Input.GetKeyDown(KeyCode.A)){
-            nmx--;
-        } else if(Input.GetKeyDown(KeyCode.D)){
-            nmx++;
-        } else if(Input.GetKeyDown(KeyCode.W)){
-            nmy--;
-        } else if(Input.GetKeyDown(KeyCode.S)){
-            nmy++;
-        }
+        // if(Input.GetKeyDown(KeyCode.A)){
+        //     nmx--;
+        // } else if(Input.GetKeyDown(KeyCode.D)){
+        //     nmx++;
+        // } else if(Input.GetKeyDown(KeyCode.W)){
+        //     nmy--;
+        // } else if(Input.GetKeyDown(KeyCode.S)){
+        //     nmy++;
+        // }
 
         if(started){
             redraw++;
@@ -127,194 +127,25 @@ public class EnvironmentDrawer : MonoBehaviour {
             }
             redraw = 0;
 
-            int updateTiles = 0;
             EnvironmentID newId = new EnvironmentID(0, 0, 0, 0);
 
+            // If this continues to be shitty, let's just get the screen data right from the screen buffer :P
+            // It'll be strange but always accurate
+            // We'll have to detect scrolling manually (how...?) and have really specific pattern detection
+            // But then it'll always visually match
+
+            // First, detect and track vertical and horizontal markers, then scroll the origin and offset stuff?
             for(int namey = 0; namey < DRAW_SIZE; ++namey){
                 for(int namex = 0; namex < DRAW_SIZE; ++namex){
-                    // The max of those -> ushort memory = (ushort)(0x2000 + (x * 2) + (y * 0x20 * 2));
-                    // 0x2000 + (126) + (3776)
-                    // should equal 0x2FBF
 
-                    // This is hand-fixed, so it's real fucky
-                    int remappedy = (DRAW_SIZE - 1) - namey;
-                    int remappedx = namex;
-
-                    // This isn't right... :/
-                    // if(remappedx < 16 && remappedy < 16){
-                    //     remappedx += 16;
-                    //     remappedy += 16;
-                    // } else if(remappedx >= 16 && remappedy >= 16){
-                    //     remappedx -= 16;
-                    //     remappedy -= 16;
-                    // }
-
-                    EnvironmentID prevId = ids[remappedx, remappedy];
-
-                    // This one needs "real" x and y
-                    GetIdsForNameIndex(namex, namey, ref newId.idA, ref newId.idB, ref newId.idC, ref newId.idD);
-                    if(newId != prevId){
-                        // Honestly it's probably "cheapest" to just swap out the prefab right here
-                        // i.e. only swap what changed
-                        updateTiles++;
-
-                        if(instances[remappedx, remappedy]){
-                            Destroy(instances[remappedx, remappedy]);
-                        }
-
-                        ids[remappedx, remappedy] = newId;
-
-                        GameObject match = null;
-                        for(int i = 0; i < matches.Length; ++i){
-                            if(matches[i].id == newId){
-                                match = matches[i].prefab;
-                                break;
-                            }
-                        }
-
-                        if(match){
-                            // Debug.Log("Matched Tile! " + newId.idA + ", " + newId.idB + ", " + newId.idC + ", " + newId.idD);
-                            GameObject newInstance = Object.Instantiate(match, nameTableOrigin.transform);
-                            newInstance.transform.localPosition = new Vector3(remappedx * 2.0f, 0.0f, remappedy * 2.0f);
-                            instances[remappedx, remappedy] = newInstance;
-                        } else {
-                            GameObject newInstance = Object.Instantiate(blankTile, nameTableOrigin.transform);
-                            newInstance.transform.localPosition = new Vector3(remappedx * 2.0f, 0.0f, remappedy * 2.0f);
-                            instances[remappedx, remappedy] = newInstance;
-                        }
-
-                    }
                 }
             }
-            if(updateTiles > 0){
-                // Debug.LogError("Updated " + updateTiles + " tiles.");
-            }
-
-            DebugDrawNM();
         } else {
-            if(emu.started){
-                started = true;
-                ppuMem = emu.GetConsole().PpuMemory;
-                bgAddress = emu.GetConsole().Ppu.GetBGPatternTableAddress();
-            }
+            // if(emu.started){
+            //     started = true;
+            //     ppuMem = emu.GetConsole().PpuMemory;
+            //     bgAddress = emu.GetConsole().Ppu.GetBGPatternTableAddress();
+            // }
         }
-    }
-
-    public void GetIdsForNameIndex(int x, int y, ref ushort a, ref ushort b, ref ushort c, ref ushort d){
-        for(int i = 0; i < 4; ++i){
-            // Get tiles in groups of 4
-            // (+0   , +1)
-            // (+0x20, +0x21)
-
-            // Strides of 2x2
-            ushort memory = (ushort)(0x2000 + (x * 2) + (y * 0x20 * 2));
-
-            if(i == 0){
-                memory += 0x00;
-            } else if(i == 1){
-                memory += 0x01;
-            } else if(i == 2){
-                memory += 0x20;
-            } else if(i == 3){
-                memory += 0x21;
-            }
-
-            byte nameAddress = ppuMem.Read(memory);
-
-            for(int tiley = 0; tiley < 8 /* pixels tall */; ++tiley){
-                ushort patternAddressLo = (ushort)(bgAddress + (nameAddress * 16) + tiley);
-                ushort patternAddressHi = (ushort)(bgAddress + (nameAddress * 16) + tiley + 8);
-
-                byte loColorByte = ppuMem.Read(patternAddressLo);
-                byte hiColorByte = ppuMem.Read(patternAddressHi);
-
-                // Striped Pattern (sideways :P)
-                //  x
-                //  ^
-                //  |
-                //  +--> Y
-                //
-                // 0x0000 0x0000   0x0000 0x0000
-                // 0x0000 0x0000   0xFFFF 0xFFFF
-                // 0x0000 0x0000   0x0000 0x0000
-                // 0xFFFF 0xFFFF   0x0000 0x0000
-                //
-                // 0x0000 0x0000   0x0000 0x0000
-                // 0x0000 0x0000   0xFFFF 0xFFFF
-                // 0x0000 0x0000   0x0000 0x0000
-                // 0xFFFF 0xFFFF   0x0000 0x0000
-
-                if(i == 0 && tiley == 0){
-                    a = (ushort)((hiColorByte << 8) | loColorByte);
-                } else if(i == 1 && tiley == 2){
-                    b = (ushort)((hiColorByte << 8) | loColorByte);
-                } else if(i == 2 && tiley == 0){
-                    c = (ushort)((hiColorByte << 8) | loColorByte);
-                } else if(i == 3 && tiley == 2){
-                    d = (ushort)((hiColorByte << 8) | loColorByte);
-                }
-            }
-        }
-    }
-
-    void DebugDrawNM(){
-        for(int i = 0; i < 4; ++i){
-            // Get tiles in groups of 4
-            // (+0   , +1)
-            // (+0x20, +0x21)
-
-            // Strides of 2x2
-            ushort memory = (ushort)(0x2000 + (nmx) + (nmy * 0x20));
-            int xPlus = 0;
-            int yPlus = 0;
-
-            if(i == 0){
-                memory += 0x00;
-                xPlus = 0;
-                yPlus = 0;
-            } else if(i == 1){
-                memory += 0x01;
-                xPlus = 8;
-                yPlus = 0;
-            } else if(i == 2){
-                memory += 0x20;
-                xPlus = 0;
-                yPlus = 8;
-            } else if(i == 3){
-                memory += 0x21;
-                xPlus = 8;
-                yPlus = 8;
-            }
-
-            byte nameAddress = ppuMem.Read(memory);
-
-            for(int tiley = 0; tiley < 8 /* pixels tall */; ++tiley){
-                ushort patternAddressLo = (ushort)(bgAddress + (nameAddress * 16) + tiley);
-                ushort patternAddressHi = (ushort)(bgAddress + (nameAddress * 16) + tiley + 8);
-
-                byte loColorByte = ppuMem.Read(patternAddressLo);
-                byte hiColorByte = ppuMem.Read(patternAddressHi);
-
-                if(i == 0 && tiley == 0){
-                    A = (ushort)((hiColorByte << 8) | loColorByte);
-                } else if(i == 1 && tiley == 2){
-                    B = (ushort)((hiColorByte << 8) | loColorByte);
-                } else if(i == 2 && tiley == 0){
-                    C = (ushort)((hiColorByte << 8) | loColorByte);
-                } else if(i == 3 && tiley == 2){
-                    D = (ushort)((hiColorByte << 8) | loColorByte);
-                }
-
-                for(int tilex = 0; tilex < 8 /* pixels wide */; ++tilex){
-                    byte loColorBit = (byte)((loColorByte >> (7 - tilex)) & 1);
-                    byte hiColorBit = (byte)((hiColorByte >> (7 - tilex)) & 1);
-                    byte colorNum = (byte)((hiColorBit << 1) | (loColorBit) & 0x03);
-
-                    display.SetPixel(tilex + xPlus, tiley + yPlus, GetColor(colorNum));
-                }
-
-            }
-        }
-        display.Apply();
     }
 }
