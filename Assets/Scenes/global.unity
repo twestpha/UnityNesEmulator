@@ -8164,6 +8164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   display: {fileID: 2800000, guid: 169548b6d3ed37649ad279c4346a1cf1, type: 3}
+  emulatorDisplay: {fileID: 0}
   nameTableOrigin: {fileID: 419906636}
   matches:
   - id:
