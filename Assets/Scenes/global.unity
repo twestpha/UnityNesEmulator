@@ -8164,7 +8164,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   display: {fileID: 2800000, guid: 169548b6d3ed37649ad279c4346a1cf1, type: 3}
-  emulatorDisplay: {fileID: 0}
+  emulatorDisplay: {fileID: 2800000, guid: 56da0be32ab74dc429cae75a09f5b223, type: 3}
   nameTableOrigin: {fileID: 419906636}
   matches:
   - id:
@@ -8225,12 +8225,7 @@ MonoBehaviour:
       type: 3}
   blankTile: {fileID: 1997089311552493584, guid: 7e1a9f33cfeacd845958c8a3d6cb6d39,
     type: 3}
-  nmx: 0
-  nmy: 0
-  A: 0
-  B: 0
-  C: 0
-  D: 0
+  useMarker: 0
 --- !u!1 &1007548294
 GameObject:
   m_ObjectHideFlags: 0

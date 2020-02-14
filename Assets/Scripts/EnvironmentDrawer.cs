@@ -31,6 +31,11 @@ public class EnvironmentMatch {
     public GameObject prefab;
 }
 
+public class Position2 {
+    public int x;
+    public int y;
+}
+
 public class Marker {
     public const int WIDTH = 256;
     public const int HEIGHT = 240;
@@ -49,6 +54,8 @@ public class Marker {
     public int deltaX;
     public int deltaY;
 
+    public int matchesFailed;
+
     public byte markerCenter;
     public byte[] up;
     public byte[] down;
@@ -66,6 +73,8 @@ public class Marker {
 
         currentX = x;
         currentY = y;
+
+        matchesFailed = 0;
 
         markerCenter = bitmap[Flatten(x, y)];
 
@@ -158,6 +167,8 @@ public class Marker {
                     }
 
                     if(foundMatch){
+                        matchesFailed = 0;
+
                         previousX = currentX;
                         previousY = currentY;
 
@@ -173,6 +184,7 @@ public class Marker {
             }
         }
 
+        matchesFailed++;
         return false;
     }
 
@@ -209,20 +221,10 @@ public class Marker {
 }
 
 public class EnvironmentDrawer : MonoBehaviour {
-    public const int DRAW_SIZE = 32;
+    public const int DRAW_WIDTH = 16;
+    public const int DRAW_HEIGHT = 15;
+    public const int MARKER_COUNT = 16;
 
-    // Rocks = 49, 165, 53, 102
-    // Solid Wall = 1319, 46324, 2891, 54526
-    // Vertical Wall = 0, 18557, 566, 123
-    // Grass = 65280, ", ", "
-    // Pillar = 3887, 61683, 2607, 43258
-    // Stairs = 233, 30583, 30583, 112
-    // Door = 13, 122, 1086, 15998
-
-    // Roofs are complicated, they'll need a bunch of matches
-
-    // Mapping of some hex value (representing the pattern table) to prefab
-    // List of instantiated prefabs at name table "locations"
     public Texture2D display;
     public Texture2D emulatorDisplay;
     public GameObject nameTableOrigin;
@@ -233,93 +235,100 @@ public class EnvironmentDrawer : MonoBehaviour {
 
     private EnvironmentID[,] ids;
     private GameObject[,] instances;
-    // private Dictionary<EnvironmentID, GameObject> mapping;
 
     private bool started = false;
     private int redraw = 0;
 
     private Emulator emu;
-    private Nescafe.PpuMemory ppuMem;
-    private ushort bgAddress;
-
-    private Color[] colors;
-
-    private Marker[] testMarkers;
-
-    public bool useMarker;
+    private Marker[] markers;
 
     void Start(){
         emu = GetComponent<Emulator>();
 
-        ids = new EnvironmentID[DRAW_SIZE, DRAW_SIZE];
-        instances = new GameObject[DRAW_SIZE, DRAW_SIZE];
+        ids = new EnvironmentID[DRAW_WIDTH, DRAW_HEIGHT];
+        instances = new GameObject[DRAW_WIDTH, DRAW_HEIGHT];
 
         redraw = 0;
 
-        testMarkers = new Marker[16];
-
-        // mapping = new Dictionary<EnvironmentID, GameObject>();
-        // for(int i = 0; i < matches.Length; ++i){
-        //     mapping.Add(matches[i].id, matches[i].prefab);
-        // }
-
+        markers = new Marker[MARKER_COUNT];
     }
 
     void Update(){
-        // if(Input.GetKeyDown(KeyCode.A)){
-        //     nmx--;
-        // } else if(Input.GetKeyDown(KeyCode.D)){
-        //     nmx++;
-        // } else if(Input.GetKeyDown(KeyCode.W)){
-        //     nmy--;
-        // } else if(Input.GetKeyDown(KeyCode.S)){
-        //     nmy++;
-        // }
-
         if(started){
-            if(useMarker == true){
-                useMarker = false;
+            // Get "average" delta with voting
+            // If not enough even find a match, we've done a scene change, and we need to refresh all markers
 
-                for(int i = 0; i < 16; ++i){
+            // Still yet to come:
+            // Detecting tiles, then drawing them to "correct" index
+            // Sliding the "world" transform around based on the average delta
+            Dictionary<int, int> xOffsetVote = new Dictionary<int, int>();
+            Dictionary<int, int> yOffsetVote = new Dictionary<int, int>();
+            int validMarkerCount = 0;
+
+            for(int i = 0; i < MARKER_COUNT; ++i){
+                if(markers[i].FindMatch(emu.GetConsole().Ppu.BitmapData)){
+                    if(xOffsetVote.ContainsKey(markers[i].deltaX)){
+                        xOffsetVote[markers[i].deltaX]++;
+                    } else {
+                        xOffsetVote.Add(markers[i].deltaX, 1);
+                    }
+
+                    if(yOffsetVote.ContainsKey(markers[i].deltaY)){
+                        yOffsetVote[markers[i].deltaY]++;
+                    } else {
+                        yOffsetVote.Add(markers[i].deltaY, 1);
+                    }
+
+                    validMarkerCount++;
+
+                    // Debug.Log("DELTAS: (" + testMarker.deltaX + ", " + testMarker.deltaY + ")");
+                    markers[i].DrawMarkerToDisplay(emulatorDisplay);
+                }
+
+                if(markers[i].matchesFailed > 20 /* frames */){
                     int xrand = 32 + (int)(Random.value * (float)(208 - 32));
                     int yrand = 32 + (int)(Random.value * (float)(208 - 32));
-                    Debug.Log("(" + xrand + ", " + yrand + ")");
-                    testMarkers[i] = new Marker(
+
+                    markers[i] = new Marker(
                         xrand, yrand,
                         emu.GetConsole().Ppu.BitmapData
                     );
-
-                    testMarkers[i].DrawMarkerToDisplay(emulatorDisplay);
-
-                }
-                Debug.LogError("LKJASKDJLK");
-            }
-
-            if(testMarkers[0] != null){
-                for(int i = 0; i < 16; ++i){
-                    if(testMarkers[i].FindMatch(emu.GetConsole().Ppu.BitmapData)){
-                        testMarkers[i].DrawMarkerToDisplay(emulatorDisplay);
-                        // Debug.Log("DELTAS: (" + testMarker.deltaX + ", " + testMarker.deltaY + ")");
-                    }
                 }
             }
 
-
-
-
-            // Go through all markers
-            // If they all have "around" the same amount of movement, use that delta to scroll the screen some amount
-
-            // if they're all invalid, we probably has a scene change. Invalidate them and setup all new ones.
-
-
-            redraw++;
-            if(redraw < 4){
+            // If not enough markers are valid, reset them all
+            if(validMarkerCount < MARKER_COUNT / 4){
+                ResetAllMarkers();
                 return;
             }
-            redraw = 0;
 
-            EnvironmentID newId = new EnvironmentID(0, 0, 0, 0);
+            int highestXOffsetVote = 0;
+            int xDelta = 0;
+            foreach(KeyValuePair<int, int> entry in xOffsetVote){
+                if(entry.Value > highestXOffsetVote){
+                    highestXOffsetVote = entry.Value;
+                    xDelta = entry.Key;
+                }
+            }
+
+            int highestYOffsetVote = 0;
+            int yDelta = 0;
+            foreach(KeyValuePair<int, int> entry in yOffsetVote){
+                if(entry.Value > highestYOffsetVote){
+                    highestYOffsetVote = entry.Value;
+                    yDelta = entry.Key;
+                }
+            }
+
+            Debug.Log("DELTA: (" + xDelta + ", " + yDelta + ")");
+
+            // redraw++;
+            // if(redraw < 4){
+            //     return;
+            // }
+            // redraw = 0;
+
+            // EnvironmentID newId = new EnvironmentID(0, 0, 0, 0);
 
             // If this continues to be shitty, let's just get the screen data right from the screen buffer :P
             // It'll be strange but always accurate
@@ -335,17 +344,30 @@ public class EnvironmentDrawer : MonoBehaviour {
             // }
 
             // First, detect and track vertical and horizontal markers, then scroll the origin and offset stuff?
-            for(int namey = 0; namey < DRAW_SIZE; ++namey){
-                for(int namex = 0; namex < DRAW_SIZE; ++namex){
-
-                }
-            }
+            // for(int namey = 0; namey < DRAW_SIZE; ++namey){
+            //     for(int namex = 0; namex < DRAW_SIZE; ++namex){
+            //
+            //     }
+            // }
         } else {
             if(emu.started){
                 started = true;
-                // ppuMem = emu.GetConsole().PpuMemory;
-                // bgAddress = emu.GetConsole().Ppu.GetBGPatternTableAddress();
+                ResetAllMarkers();
             }
+        }
+    }
+
+    void ResetAllMarkers(){
+        for(int i = 0; i < MARKER_COUNT; ++i){
+            // Probably put this in the constructor?
+            int xrand = 32 + (int)(Random.value * (float)(208 - 32));
+            int yrand = 32 + (int)(Random.value * (float)(208 - 32));
+
+            // Debug.Log("(" + xrand + ", " + yrand + ")");
+            markers[i] = new Marker(
+                xrand, yrand,
+                emu.GetConsole().Ppu.BitmapData
+            );
         }
     }
 }
