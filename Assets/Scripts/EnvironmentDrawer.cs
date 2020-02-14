@@ -6,6 +6,11 @@ using UnityEngine;
 public class EnvironmentMatch {
     public Texture2D tile;
     public GameObject prefab;
+
+    public bool IsMatch(int x, int y, byte[] bitmap){
+        // Texture2D is in color... Might want to have a different method of matching?
+        return true;
+    }
 }
 
 public class Marker {
@@ -192,21 +197,23 @@ public class Marker {
 }
 
 public class EnvironmentDrawer : MonoBehaviour {
-    public const int DRAW_WIDTH = 256;
-    public const int DRAW_HEIGHT = 256;
+    public const int TILE_SIZE = 256;
+    public const int TILE_ORIGIN_X = 128;
+    public const int TILE_ORIGIN_Y = 128;
     public const int MARKER_COUNT = 16;
 
+    public const int PIXELS_PER_TILE = 16;
     public const float PIXELS_TO_WORLD = 0.12500f;
 
     public Texture2D display;
-    public GameObject nameTableOrigin;
     public EnvironmentMatch[] matches;
-    public GameObject blankTile;
+    public GameObject gameCamera;
 
     private byte[] bitmap;
-    private GameObject[,] instances;
+    private GameObject[,] tiles;
 
     private bool started = false;
+    private int totalDeltaX, totalDeltaY;
 
     private Emulator emu;
     private Marker[] markers;
@@ -218,7 +225,7 @@ public class EnvironmentDrawer : MonoBehaviour {
         emu = GetComponent<Emulator>();
         bitmap = emu.GetConsole().Ppu.BitmapData;
 
-        instances = new GameObject[DRAW_WIDTH, DRAW_HEIGHT];
+        tiles = new GameObject[TILE_SIZE, TILE_SIZE];
 
         markers = new Marker[MARKER_COUNT];
     }
@@ -244,6 +251,8 @@ public class EnvironmentDrawer : MonoBehaviour {
 
             for(int y = 0; y < 16; ++y){
                 for(int x = 0; x < 16; ++x){
+                    // Need a way to "output" this as a byte array which makes matching wayyy nicer
+                    // But also as a single "asset" is also nice
                     Color color = emu.palette[bitmap[(outputY + y) * 256 + (outputX + x)]];
                     output.SetPixel(x, y, color);
                 }
@@ -272,7 +281,7 @@ public class EnvironmentDrawer : MonoBehaviour {
 
                     validMarkerCount++;
 
-                    markers[i].DrawMarkerToDisplay(display);
+                    // markers[i].DrawMarkerToDisplay(display);
                 }
 
                 if(markers[i].matchesFailed > 20 /* frames */){
@@ -286,9 +295,11 @@ public class EnvironmentDrawer : MonoBehaviour {
                 }
             }
 
-            // If not enough markers are valid, reset them all
+            // If not enough markers are valid, reset the screen
             if(validMarkerCount < MARKER_COUNT / 4){
+                Debug.Log("RESETTING");
                 ResetAllMarkers();
+                ResetAllTiles();
                 return;
             }
 
@@ -310,26 +321,61 @@ public class EnvironmentDrawer : MonoBehaviour {
                 }
             }
 
-            // Still yet to come:
-            // Sliding the "world" transform around based on the average delta (or camera :P)
-            Debug.Log("DELTA: (" + xDelta + ", " + yDelta + ")");
+            // Slide camera around based on delta
+            totalDeltaX += xDelta;
+            totalDeltaY += yDelta;
 
-            // So... kinda two different ways to go here:
-            // A) Have a fucking massive buffer where we simply create prefab instances as we move the screen
-            //    Lots of memory but very little shuffling or destruction, and much more performant when returning to previous places
-            // B) Have a much smaller buffer where we recycle and scroll the indices as we move the screen
-            //    Much less memory but lots of shifting rows/columns when they run out
+            gameCamera.transform.position += new Vector3((float)(-xDelta) * PIXELS_TO_WORLD, 0.0f, (float)(yDelta) * PIXELS_TO_WORLD);
+
+            // Scan entire screen, try to match elements from Matches to place prefabs in those tiles slot
+            for(int y = 0; y < 240; ++y){
+                for(int x = 0; x < 256; ++x){
+                    // First, convert this x/y coordinate into offset space using total deltas
+                    // BUG x offsets are backwards...?
+                    int offsetX = x - totalDeltaX;
+                    int offsetY = y + totalDeltaY;
+
+                    // Then, convert *that* into an index into tiles[]
+                    int tileX = ((TILE_ORIGIN_X * PIXELS_PER_TILE) + offsetX) / PIXELS_PER_TILE;
+                    int tileY = ((TILE_ORIGIN_Y * PIXELS_PER_TILE) + offsetY) / PIXELS_PER_TILE;
+
+                    if(tileX < 0 || tileX >= TILE_SIZE || tileY < 0 || tileY >= TILE_SIZE){
+                        Debug.LogError("TILE_SIZE is too small");
+                        return;
+                    }
+
+                    // What if tiles need "updating"?
+                    if(tiles[tileX, tileY] == null){
+                        for(int i = 0; i < matches.Length; ++i){
+                            if(matches[i].IsMatch(x, y, bitmap)){
+                                GameObject newTile = Object.Instantiate(matches[i].prefab);
+                                tiles[tileX, tileY] = newTile;
+
+                                float posX = ((tileX - TILE_ORIGIN_X) * PIXELS_PER_TILE) * PIXELS_TO_WORLD;
+                                float posY = ((tileY - TILE_ORIGIN_Y) * PIXELS_PER_TILE) * PIXELS_TO_WORLD;
+                                newTile.transform.position = new Vector3(posX, 0.0f, posY);
+                            }
+                        }
+                    }
+                }
+            }
 
             // TODO fade fullscreen tint in and out based on average screen darkness?
         } else {
             if(emu.started){
                 started = true;
                 ResetAllMarkers();
+                ResetAllTiles();
             }
         }
     }
 
     void ResetAllMarkers(){
+        totalDeltaX = 0;
+        totalDeltaY = 0;
+
+        gameCamera.transform.position = new Vector3(0.0f, 9.0f, 0.0f);
+
         for(int i = 0; i < MARKER_COUNT; ++i){
             // Probably put this in the constructor?
             int xrand = 32 + (int)(Random.value * (float)(208 - 32));
@@ -344,6 +390,12 @@ public class EnvironmentDrawer : MonoBehaviour {
     }
 
     void ResetAllTiles(){
-
+        for(int y = 0; y < TILE_SIZE; ++y){
+            for(int x = 0; x < TILE_SIZE; ++x){
+                if(tiles[x, y] != null){
+                    Destroy(tiles[x, y]);
+                }
+            }
+        }
     }
 }
