@@ -3027,7 +3027,7 @@ RectTransform:
   m_GameObject: {fileID: 389425128}
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_LocalScale: {x: 1, y: -1, z: 1}
   m_Children: []
   m_Father: {fileID: 1596181579}
   m_RootOrder: 1
@@ -8135,6 +8135,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   ROMFile: {fileID: 4900000, guid: 2e32574b1e1368e4db1a375fc28b9faa, type: 3}
   emulatorDisplay: {fileID: 2800000, guid: 56da0be32ab74dc429cae75a09f5b223, type: 3}
+  palette: []
   FPS: 0
   started: 0
 --- !u!4 &998263208
@@ -8163,69 +8164,14 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 935afc2d05df43c4f89b46624c8a5bd0, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  display: {fileID: 2800000, guid: 169548b6d3ed37649ad279c4346a1cf1, type: 3}
-  emulatorDisplay: {fileID: 2800000, guid: 56da0be32ab74dc429cae75a09f5b223, type: 3}
+  display: {fileID: 2800000, guid: 56da0be32ab74dc429cae75a09f5b223, type: 3}
   nameTableOrigin: {fileID: 419906636}
-  matches:
-  - id:
-      idA: 49
-      idB: 246
-      idC: 53
-      idD: 21
-    prefab: {fileID: 1840873803058861038, guid: 06ef3c365d9b5f44d80a0bd4c07cf202,
-      type: 3}
-  - id:
-      idA: 65280
-      idB: 65286
-      idC: 65280
-      idD: 65286
-    prefab: {fileID: 8882496155529461511, guid: a93d279e55c64d54799cce616e5d1a52,
-      type: 3}
-  - id:
-      idA: 3887
-      idB: 64764
-      idC: 2607
-      idD: 43257
-    prefab: {fileID: 7076510195640715565, guid: 7a43604d321d92249a51e77fb081476a,
-      type: 3}
-  - id:
-      idA: 13
-      idB: 122
-      idC: 1086
-      idD: 16062
-    prefab: {fileID: 2449031517518448727, guid: 9abbf6f405781414cb75ee9b4ea3c207,
-      type: 3}
-  - id:
-      idA: 1319
-      idB: 2238
-      idC: 2891
-      idD: 8746
-    prefab: {fileID: 5349707029823494439, guid: 182c1a0675cf3df43a332fd7eca64786,
-      type: 3}
-  - id:
-      idA: 1319
-      idB: 2238
-      idC: 2891
-      idD: 8746
-    prefab: {fileID: 5349707029823494439, guid: 182c1a0675cf3df43a332fd7eca64786,
-      type: 3}
-  - id:
-      idA: 10557
-      idB: 16631
-      idC: 23134
-      idD: 4182
-    prefab: {fileID: 5349707029823494439, guid: 182c1a0675cf3df43a332fd7eca64786,
-      type: 3}
-  - id:
-      idA: 0
-      idB: 10879
-      idC: 566
-      idD: 0
-    prefab: {fileID: 5349707029823494439, guid: 182c1a0675cf3df43a332fd7eca64786,
-      type: 3}
+  matches: []
   blankTile: {fileID: 1997089311552493584, guid: 7e1a9f33cfeacd845958c8a3d6cb6d39,
     type: 3}
-  useMarker: 0
+  output: {fileID: 2800000, guid: 169548b6d3ed37649ad279c4346a1cf1, type: 3}
+  outputX: 0
+  outputY: 0
 --- !u!1 &1007548294
 GameObject:
   m_ObjectHideFlags: 0

@@ -3,37 +3,9 @@ using System.Collections.Generic;
 using UnityEngine;
 
 [System.Serializable]
-public struct EnvironmentID {
-    public ushort idA;
-    public ushort idB;
-    public ushort idC;
-    public ushort idD;
-
-    public EnvironmentID(ushort a_, ushort b_, ushort c_, ushort d_){
-        idA = a_;
-        idB = b_;
-        idC = c_;
-        idD = d_;
-    }
-
-    public static bool operator == (EnvironmentID lhs, EnvironmentID rhs) {
-        return (lhs.idA == rhs.idA) && (lhs.idB == rhs.idB) && (lhs.idC == rhs.idC) && (lhs.idD == rhs.idD);
-    }
-
-    public static bool operator !=(EnvironmentID lhs, EnvironmentID rhs) {
-        return !(lhs == rhs);
-    }
-}
-
-[System.Serializable]
 public class EnvironmentMatch {
-    public EnvironmentID id;
+    public Texture2D tile;
     public GameObject prefab;
-}
-
-public class Position2 {
-    public int x;
-    public int y;
 }
 
 public class Marker {
@@ -189,7 +161,6 @@ public class Marker {
     }
 
     public void DrawMarkerToDisplay(Texture2D texture){
-        // Make sure to clamp all indices into bitmap!!!
         texture.SetPixel(currentX, currentY, Color.red);
         for(int i = 0; i < MARKER_SIZE; ++i){
             int rightIndex = currentX + 1 + i;
@@ -221,52 +192,72 @@ public class Marker {
 }
 
 public class EnvironmentDrawer : MonoBehaviour {
-    public const int DRAW_WIDTH = 16;
-    public const int DRAW_HEIGHT = 15;
+    public const int DRAW_WIDTH = 256;
+    public const int DRAW_HEIGHT = 256;
     public const int MARKER_COUNT = 16;
 
+    public const float PIXELS_TO_WORLD = 0.12500f;
+
     public Texture2D display;
-    public Texture2D emulatorDisplay;
     public GameObject nameTableOrigin;
-
     public EnvironmentMatch[] matches;
-
     public GameObject blankTile;
 
-    private EnvironmentID[,] ids;
+    private byte[] bitmap;
     private GameObject[,] instances;
 
     private bool started = false;
-    private int redraw = 0;
 
     private Emulator emu;
     private Marker[] markers;
 
+    public Texture2D output;
+    public int outputX, outputY;
+
     void Start(){
         emu = GetComponent<Emulator>();
+        bitmap = emu.GetConsole().Ppu.BitmapData;
 
-        ids = new EnvironmentID[DRAW_WIDTH, DRAW_HEIGHT];
         instances = new GameObject[DRAW_WIDTH, DRAW_HEIGHT];
-
-        redraw = 0;
 
         markers = new Marker[MARKER_COUNT];
     }
 
     void Update(){
         if(started){
+            // Purely debug/tools stuff
+            int amount = Input.GetKey(KeyCode.LeftShift) ? 1 : 16;
+            if(Input.GetKeyDown(KeyCode.A)){
+                outputX -= amount;
+            } else if(Input.GetKeyDown(KeyCode.D)){
+                outputX += amount;
+            } else if(Input.GetKeyDown(KeyCode.W)){
+                outputY -= amount;
+            } else if(Input.GetKeyDown(KeyCode.S)){
+                outputY += amount;
+            }
+
+            if(outputX < 0){ outputX = 0; }
+            if(outputX >= 240){ outputX = 240; }
+            if(outputY < 0){ outputY = 0; }
+            if(outputY >= 224){ outputY = 224; }
+
+            for(int y = 0; y < 16; ++y){
+                for(int x = 0; x < 16; ++x){
+                    Color color = emu.palette[bitmap[(outputY + y) * 256 + (outputX + x)]];
+                    output.SetPixel(x, y, color);
+                }
+            }
+            output.Apply();
+
             // Get "average" delta with voting
             // If not enough even find a match, we've done a scene change, and we need to refresh all markers
-
-            // Still yet to come:
-            // Detecting tiles, then drawing them to "correct" index
-            // Sliding the "world" transform around based on the average delta
             Dictionary<int, int> xOffsetVote = new Dictionary<int, int>();
             Dictionary<int, int> yOffsetVote = new Dictionary<int, int>();
             int validMarkerCount = 0;
 
             for(int i = 0; i < MARKER_COUNT; ++i){
-                if(markers[i].FindMatch(emu.GetConsole().Ppu.BitmapData)){
+                if(markers[i].FindMatch(bitmap)){
                     if(xOffsetVote.ContainsKey(markers[i].deltaX)){
                         xOffsetVote[markers[i].deltaX]++;
                     } else {
@@ -281,8 +272,7 @@ public class EnvironmentDrawer : MonoBehaviour {
 
                     validMarkerCount++;
 
-                    // Debug.Log("DELTAS: (" + testMarker.deltaX + ", " + testMarker.deltaY + ")");
-                    markers[i].DrawMarkerToDisplay(emulatorDisplay);
+                    markers[i].DrawMarkerToDisplay(display);
                 }
 
                 if(markers[i].matchesFailed > 20 /* frames */){
@@ -291,7 +281,7 @@ public class EnvironmentDrawer : MonoBehaviour {
 
                     markers[i] = new Marker(
                         xrand, yrand,
-                        emu.GetConsole().Ppu.BitmapData
+                        bitmap
                     );
                 }
             }
@@ -320,35 +310,17 @@ public class EnvironmentDrawer : MonoBehaviour {
                 }
             }
 
+            // Still yet to come:
+            // Sliding the "world" transform around based on the average delta (or camera :P)
             Debug.Log("DELTA: (" + xDelta + ", " + yDelta + ")");
 
-            // redraw++;
-            // if(redraw < 4){
-            //     return;
-            // }
-            // redraw = 0;
+            // So... kinda two different ways to go here:
+            // A) Have a fucking massive buffer where we simply create prefab instances as we move the screen
+            //    Lots of memory but very little shuffling or destruction, and much more performant when returning to previous places
+            // B) Have a much smaller buffer where we recycle and scroll the indices as we move the screen
+            //    Much less memory but lots of shifting rows/columns when they run out
 
-            // EnvironmentID newId = new EnvironmentID(0, 0, 0, 0);
-
-            // If this continues to be shitty, let's just get the screen data right from the screen buffer :P
-            // It'll be strange but always accurate
-            // We'll have to detect scrolling manually (how...?) and have really specific pattern detection
-            // But then it'll always visually match
-
-            // for(int i = 0; i < 256 * 240; ++i){
-            //     int x = i % 256;
-            //     int y = i / 256;
-            //
-            //     Color color = palette[console.Ppu.BitmapData[i]];
-            //     emulatorDisplay.SetPixel(x, y, color);
-            // }
-
-            // First, detect and track vertical and horizontal markers, then scroll the origin and offset stuff?
-            // for(int namey = 0; namey < DRAW_SIZE; ++namey){
-            //     for(int namex = 0; namex < DRAW_SIZE; ++namex){
-            //
-            //     }
-            // }
+            // TODO fade fullscreen tint in and out based on average screen darkness?
         } else {
             if(emu.started){
                 started = true;
@@ -369,5 +341,9 @@ public class EnvironmentDrawer : MonoBehaviour {
                 emu.GetConsole().Ppu.BitmapData
             );
         }
+    }
+
+    void ResetAllTiles(){
+
     }
 }

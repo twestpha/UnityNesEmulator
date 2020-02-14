@@ -11,7 +11,7 @@ public class Emulator : MonoBehaviour {
 
     private Console console;
     public Console GetConsole(){ return console; }
-    private Color[] palette;
+    public Color[] palette;
 
     public float FPS;
     private float lastframetime;
