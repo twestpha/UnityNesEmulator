@@ -7840,14 +7840,14 @@ Transform:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 963194225}
-  m_LocalRotation: {x: 0.42261827, y: 0, z: 0, w: 0.9063079}
+  m_LocalRotation: {x: 0.46174863, y: 0, z: 0, w: 0.8870109}
   m_LocalPosition: {x: 0, y: 9, z: 0}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_Children:
   - {fileID: 1596181579}
   m_Father: {fileID: 0}
   m_RootOrder: 0
-  m_LocalEulerAnglesHint: {x: 50, y: 0, z: 0}
+  m_LocalEulerAnglesHint: {x: 55, y: 0, z: 0}
 --- !u!114 &963194229
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -8165,6 +8165,7 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: 
   display: {fileID: 2800000, guid: 56da0be32ab74dc429cae75a09f5b223, type: 3}
+  gameCamera: {fileID: 963194225}
   matches:
   - tile: {fileID: 11400000, guid: a09ccd8422902904d88470f13f1e7502, type: 2}
     prefab: {fileID: 8882496155529461511, guid: a93d279e55c64d54799cce616e5d1a52,
@@ -8187,14 +8188,13 @@ MonoBehaviour:
   - tile: {fileID: 11400000, guid: 5a34fcf552882ee4d990eec4ab6466d3, type: 2}
     prefab: {fileID: 8088856600582584007, guid: c65998683f6fdcb4fb1f489d4bfd535d,
       type: 3}
-  gameCamera: {fileID: 963194225}
   output: {fileID: 2800000, guid: 169548b6d3ed37649ad279c4346a1cf1, type: 3}
   outputX: 0
   outputY: 0
   writeOutput: 0
   outputData: {fileID: 11400000, guid: 88f19fce35611424085222f0c75935ec, type: 2}
-  tuningOffsetX: 0
-  tuningOffsetY: 0
+  tuningOffsetX: -14
+  tuningOffsetY: 20
 --- !u!1 &1007548294
 GameObject:
   m_ObjectHideFlags: 0

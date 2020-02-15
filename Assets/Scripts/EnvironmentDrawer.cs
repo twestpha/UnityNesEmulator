@@ -336,6 +336,7 @@ public class EnvironmentDrawer : MonoBehaviour {
                     markers[i].DrawMarkerToDisplay(display);
                 }
 
+                // TODO don't randomize tracker location, use strategic positions
                 if(markers[i].matchesFailed > 20 /* frames */){
                     int xrand = 32 + (int)(Random.value * (float)(208 - 32));
                     int yrand = 32 + (int)(Random.value * (float)(208 - 32));
@@ -445,6 +446,7 @@ public class EnvironmentDrawer : MonoBehaviour {
 
         for(int i = 0; i < MARKER_COUNT; ++i){
             // Probably put this in the constructor?
+            // TODO don't randomize tracker location, use strategic positions
             int xrand = 32 + (int)(Random.value * (float)(208 - 32));
             int yrand = 32 + (int)(Random.value * (float)(208 - 32));
 
