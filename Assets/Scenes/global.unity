@@ -8175,12 +8175,26 @@ MonoBehaviour:
   - tile: {fileID: 11400000, guid: 28b29fc992f22b243add4b438c9c11b9, type: 2}
     prefab: {fileID: 5349707029823494439, guid: 182c1a0675cf3df43a332fd7eca64786,
       type: 3}
+  - tile: {fileID: 11400000, guid: df434fb267deda648b67a68e11f18ff0, type: 2}
+    prefab: {fileID: 5349707029823494439, guid: 182c1a0675cf3df43a332fd7eca64786,
+      type: 3}
+  - tile: {fileID: 11400000, guid: eebda2b53030a9f478079303d50353f6, type: 2}
+    prefab: {fileID: 5349707029823494439, guid: 182c1a0675cf3df43a332fd7eca64786,
+      type: 3}
+  - tile: {fileID: 11400000, guid: 88f19fce35611424085222f0c75935ec, type: 2}
+    prefab: {fileID: 7076510195640715565, guid: 7a43604d321d92249a51e77fb081476a,
+      type: 3}
+  - tile: {fileID: 11400000, guid: 5a34fcf552882ee4d990eec4ab6466d3, type: 2}
+    prefab: {fileID: 8088856600582584007, guid: c65998683f6fdcb4fb1f489d4bfd535d,
+      type: 3}
   gameCamera: {fileID: 963194225}
   output: {fileID: 2800000, guid: 169548b6d3ed37649ad279c4346a1cf1, type: 3}
   outputX: 0
   outputY: 0
   writeOutput: 0
-  outputData: {fileID: 11400000, guid: c01ec0dca4e9adf4e9084205dfa33457, type: 2}
+  outputData: {fileID: 11400000, guid: 88f19fce35611424085222f0c75935ec, type: 2}
+  tuningOffsetX: 0
+  tuningOffsetY: 0
 --- !u!1 &1007548294
 GameObject:
   m_ObjectHideFlags: 0
@@ -16421,7 +16435,7 @@ MeshRenderer:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2019872405}
-  m_Enabled: 1
+  m_Enabled: 0
   m_CastShadows: 1
   m_ReceiveShadows: 1
   m_DynamicOccludee: 1

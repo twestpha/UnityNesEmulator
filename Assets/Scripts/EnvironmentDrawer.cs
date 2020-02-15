@@ -229,7 +229,9 @@ public class EnvironmentDrawer : MonoBehaviour {
     public const int TILE_SIZE = 256;
     public const int TILE_ORIGIN_X = 128;
     public const int TILE_ORIGIN_Y = 128;
+
     public const int MARKER_COUNT = 32;
+    public const int MIN_VALID_MARKER_COUNT = 4;
 
     public const int MINIMUM_VOTE_FOR_DELTA = 8;
 
@@ -237,8 +239,9 @@ public class EnvironmentDrawer : MonoBehaviour {
     public const float PIXELS_TO_WORLD = 0.12500f;
 
     public Texture2D display;
-    public EnvironmentMatch[] matches;
     public GameObject gameCamera;
+    [Header("Matches")]
+    public EnvironmentMatch[] matches;
 
     private byte[] bitmap;
     private GameObject[,] tiles;
@@ -249,10 +252,15 @@ public class EnvironmentDrawer : MonoBehaviour {
     private Emulator emu;
     private Marker[] markers;
 
+    [Header("Output")]
     public Texture2D output;
     public int outputX, outputY;
     public bool writeOutput;
     public TileMatchData outputData;
+
+    [Header("Tuning")]
+    public float tuningOffsetX;
+    public float tuningOffsetY;
 
     void Start(){
         emu = GetComponent<Emulator>();
@@ -340,7 +348,7 @@ public class EnvironmentDrawer : MonoBehaviour {
             }
 
             // If not enough markers are valid, reset the screen
-            if(validMarkerCount < MARKER_COUNT / 4){
+            if(validMarkerCount < MIN_VALID_MARKER_COUNT){
                 Debug.Log("RESETTING");
                 ResetAllMarkers();
                 ResetAllTiles();
@@ -377,34 +385,30 @@ public class EnvironmentDrawer : MonoBehaviour {
 
             gameCamera.transform.position += new Vector3((float)(-xDelta) * PIXELS_TO_WORLD, 0.0f, (float)(yDelta) * PIXELS_TO_WORLD);
 
-            /*
-            {
             // Scan entire screen, try to match elements from Matches to place prefabs in those tiles slot
-            // for(int y = 16; y < 224; ++y){ // Don't do all of Y?
-            //     for(int x = 0; x < 256; ++x){
-                    int x = 80; int y = 32;
+            for(int y = 15; y < 224; ++y){ // Don't do all of Y?
+                for(int x = 0; x < 256; ++x){
+                    // int x = 80; int y = 32;
                     // First, convert this x/y coordinate into offset space using total deltas
                     // BUG BUG BUG these mappings are super fucked up... :(
-                    int offsetX = x + totalDeltaX;
-                    int offsetY = y + totalDeltaY;
-                    Debug.Log("ALSKJDLKASJDLKASJDLKJ");
-                    Debug.Log(offsetX);
-                    Debug.Log(offsetY);
+                    int offsetX = x - totalDeltaX;
+                    int offsetY = y - totalDeltaY;
+                    // Debug.Log("ALSKJDLKASJDLKASJDLKJ");
+                    // Debug.Log(offsetX);
+                    // Debug.Log(offsetY);
 
                     // Then, convert *that* into an index into tiles[]
                     int tileX = ((TILE_ORIGIN_X * PIXELS_PER_TILE) + offsetX) / PIXELS_PER_TILE;
                     int tileY = ((TILE_ORIGIN_Y * PIXELS_PER_TILE) + offsetY) / PIXELS_PER_TILE;
 
-                    Debug.Log(tileX);
-                    Debug.Log(tileY);
+                    // Debug.Log(tileX);
+                    // Debug.Log(tileY);
 
                     if(tileX < 0 || tileX >= TILE_SIZE || tileY < 0 || tileY >= TILE_SIZE){
                         Debug.LogError("TILE_SIZE is too small");
                         return;
                     }
 
-                    // What if tiles need "updating"? Like a tile that changes, etc?
-                    // Maybe a quick-cheap comparison of "Hey, are you still that tile?" before all these shenanigans
                     if(tiles[tileX, tileY] == null){
                         for(int i = 0; i < matches.Length; ++i){
                             if(matches[i].IsMatch(x, y, bitmap)){
@@ -413,12 +417,15 @@ public class EnvironmentDrawer : MonoBehaviour {
 
                                 float posX = ((tileX - TILE_ORIGIN_X) * PIXELS_PER_TILE) * PIXELS_TO_WORLD;
                                 float posY = ((tileY - TILE_ORIGIN_Y) * PIXELS_PER_TILE) * PIXELS_TO_WORLD;
-                                newTile.transform.position = new Vector3(posX, 0.0f, posY);
+
+                                newTile.transform.position = new Vector3(posX + tuningOffsetX, 0.0f, -posY + tuningOffsetY);
                             }
                         }
                     }
-            //     }
-            }*/
+                    // What if tiles need "updating"? Like a tile that we missed, or one that an sprite was covering?
+                    // Maybe a quick-cheap comparison of "Hey, are you still that tile?" before all these shenanigans
+                }
+            }
 
             // TODO fade fullscreen tint in and out based on average screen darkness?
         } else {
