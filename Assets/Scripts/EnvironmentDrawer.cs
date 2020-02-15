@@ -4,11 +4,29 @@ using UnityEngine;
 
 [System.Serializable]
 public class EnvironmentMatch {
-    public Texture2D tile;
+    public TileMatchData tile;
     public GameObject prefab;
 
-    public bool IsMatch(int x, int y, byte[] bitmap){
-        // Texture2D is in color... Might want to have a different method of matching?
+    public bool IsMatch(int startX, int startY, byte[] bitmap){
+        if(tile.data == null || tile.data.Length <= 0){
+            return false;
+        }
+
+        // TODO make matching floatier, where less than some amount disqualifies
+        // and more than some amount qualifies
+        for(int y = 0; y < 16; ++y){
+            for(int x = 0; x < 16; ++x){
+                int offsetX = startX + x;
+                int offsetY = startY + y;
+
+                if(offsetY > 0 && offsetY < 240 && offsetX > 0 && offsetX < 256){
+                    if(tile.data[(y * 16) + x] != bitmap[(offsetY * 256) + offsetX]){
+                        return false;
+                    }
+                }
+            }
+        }
+
         return true;
     }
 }
@@ -76,66 +94,77 @@ public class Marker {
     }
 
     public bool FindMatch(byte[] bitmap){
-        int farUp = currentY + MARKER_MAX_MOVE;
-        int farDown = currentY - MARKER_MAX_MOVE;
+        if(currentX < 0 || currentX > WIDTH){
+            return false;
+        }
+        if(currentY < 0 || currentY > HEIGHT){
+            return false;
+        }
+
+        int farDown = currentY + MARKER_MAX_MOVE;
+        int farUp = currentY - MARKER_MAX_MOVE;
         int farRight = currentX + MARKER_MAX_MOVE;
         int farLeft = currentX - MARKER_MAX_MOVE;
 
         ClampToBounds(ref farLeft, ref farUp);
         ClampToBounds(ref farRight, ref farDown);
 
-        if(farUp == 0 && farDown == 0){
+        if(farDown == 0 && farUp == 0){
             return false;
         }
         if(farRight == 0 && farLeft == 0){
             return false;
         }
 
-        for(int y = farDown; y < farUp; ++y){
-            for(int x = farLeft; x < farRight; ++x){
+        for(int y = farUp - 1; y < farDown; ++y){
+            for(int x = farLeft - 1; x < farRight; ++x){
+                // Slight remapping to check current position first
+                int remapX = x < farLeft ? currentX : x;
+                int remapY = y < farUp ? currentY : y;
+
                 // If our center matches, we can start the matching process
-                if(bitmap[Flatten(x, y)] == markerCenter){
+                if(bitmap[Flatten(remapX, remapY)] == markerCenter){
                     bool foundMatch = true;
                     // If we find a full match, set deltas and bail
                     for(int i = 0; i < MARKER_SIZE; ++i){
-                        int upIndex = (y - 1 - i);
+                        int upIndex = (remapY - 1 - i);
                         bool upInRange = upIndex > 0;
                         bool upMatch = true;
                         if(upInRange){
-                            upMatch = bitmap[Flatten(x, upIndex)] == up[i];
+                            upMatch = bitmap[Flatten(remapX, upIndex)] == up[i];
                         }
                         if(!upMatch){
                             foundMatch = false;
                             break;
                         }
 
-                        int downIndex = (y + 1 + i);
+                        int downIndex = (remapY + 1 + i);
                         bool downInRange = downIndex < HEIGHT;
                         bool downMatch = true;
                         if(downInRange){
-                            downMatch = bitmap[Flatten(x, downIndex)] == down[i];
+                            downMatch = bitmap[Flatten(remapX, downIndex)] == down[i];
                         }
                         if(!downMatch){
                             foundMatch = false;
                             break;
                         }
 
-                        int rightIndex = (x + 1 + i);
+                        int rightIndex = (remapX + 1 + i);
                         bool rightInRange = rightIndex < WIDTH;
                         bool rightMatch = true;
                         if(rightInRange){
-                            rightMatch = bitmap[Flatten(rightIndex, y)] == right[i];
+                            rightMatch = bitmap[Flatten(rightIndex, remapY)] == right[i];
                         }
                         if(!rightMatch){
                             foundMatch = false;
                             break;
                         }
 
-                        int leftIndex = (x - 1 - i);
+                        int leftIndex = (remapX - 1 - i);
                         bool leftInRange = leftIndex > 0;
                         bool leftMatch = true;
                         if(leftInRange){
-                            leftMatch = bitmap[Flatten(leftIndex, y)] == left[i];
+                            leftMatch = bitmap[Flatten(leftIndex, remapY)] == left[i];
                         }
                         if(!leftMatch){
                             foundMatch = false;
@@ -149,8 +178,8 @@ public class Marker {
                         previousX = currentX;
                         previousY = currentY;
 
-                        currentX = x;
-                        currentY = y;
+                        currentX = remapX;
+                        currentY = remapY;
 
                         deltaX = currentX - previousX;
                         deltaY = currentY - previousY;
@@ -200,7 +229,9 @@ public class EnvironmentDrawer : MonoBehaviour {
     public const int TILE_SIZE = 256;
     public const int TILE_ORIGIN_X = 128;
     public const int TILE_ORIGIN_Y = 128;
-    public const int MARKER_COUNT = 16;
+    public const int MARKER_COUNT = 32;
+
+    public const int MINIMUM_VOTE_FOR_DELTA = 8;
 
     public const int PIXELS_PER_TILE = 16;
     public const float PIXELS_TO_WORLD = 0.12500f;
@@ -220,6 +251,8 @@ public class EnvironmentDrawer : MonoBehaviour {
 
     public Texture2D output;
     public int outputX, outputY;
+    public bool writeOutput;
+    public TileMatchData outputData;
 
     void Start(){
         emu = GetComponent<Emulator>();
@@ -233,7 +266,7 @@ public class EnvironmentDrawer : MonoBehaviour {
     void Update(){
         if(started){
             // Purely debug/tools stuff
-            int amount = Input.GetKey(KeyCode.LeftShift) ? 1 : 16;
+            int amount = Input.GetKey(KeyCode.LeftShift) ? 1 : PIXELS_PER_TILE;
             if(Input.GetKeyDown(KeyCode.A)){
                 outputX -= amount;
             } else if(Input.GetKeyDown(KeyCode.D)){
@@ -249,15 +282,26 @@ public class EnvironmentDrawer : MonoBehaviour {
             if(outputY < 0){ outputY = 0; }
             if(outputY >= 224){ outputY = 224; }
 
-            for(int y = 0; y < 16; ++y){
-                for(int x = 0; x < 16; ++x){
-                    // Need a way to "output" this as a byte array which makes matching wayyy nicer
-                    // But also as a single "asset" is also nice
+            for(int y = 0; y < PIXELS_PER_TILE; ++y){
+                for(int x = 0; x < PIXELS_PER_TILE; ++x){
                     Color color = emu.palette[bitmap[(outputY + y) * 256 + (outputX + x)]];
                     output.SetPixel(x, y, color);
                 }
             }
             output.Apply();
+
+            if(writeOutput){
+                writeOutput = false;
+                outputData.data = new byte[PIXELS_PER_TILE * PIXELS_PER_TILE];
+
+                for(int y = 0; y < 16; ++y){
+                    for(int x = 0; x < 16; ++x){
+                        outputData.data[(y * 16) + x] = bitmap[(outputY + y) * 256 + (outputX + x)];
+                    }
+                }
+
+                Debug.Log("Wrote Output Data");
+            }
 
             // Get "average" delta with voting
             // If not enough even find a match, we've done a scene change, and we need to refresh all markers
@@ -281,7 +325,7 @@ public class EnvironmentDrawer : MonoBehaviour {
 
                     validMarkerCount++;
 
-                    // markers[i].DrawMarkerToDisplay(display);
+                    markers[i].DrawMarkerToDisplay(display);
                 }
 
                 if(markers[i].matchesFailed > 20 /* frames */){
@@ -303,6 +347,8 @@ public class EnvironmentDrawer : MonoBehaviour {
                 return;
             }
 
+            // TODO pick a random marker and reset it every once in a while?
+
             int highestXOffsetVote = 0;
             int xDelta = 0;
             foreach(KeyValuePair<int, int> entry in xOffsetVote){
@@ -322,29 +368,43 @@ public class EnvironmentDrawer : MonoBehaviour {
             }
 
             // Slide camera around based on delta
-            totalDeltaX += xDelta;
-            totalDeltaY += yDelta;
+            if(highestXOffsetVote > MINIMUM_VOTE_FOR_DELTA){
+                totalDeltaX += xDelta;
+            }
+            if(highestYOffsetVote > MINIMUM_VOTE_FOR_DELTA){
+                totalDeltaY += yDelta;
+            }
 
             gameCamera.transform.position += new Vector3((float)(-xDelta) * PIXELS_TO_WORLD, 0.0f, (float)(yDelta) * PIXELS_TO_WORLD);
 
+            /*
+            {
             // Scan entire screen, try to match elements from Matches to place prefabs in those tiles slot
-            for(int y = 0; y < 240; ++y){
-                for(int x = 0; x < 256; ++x){
+            // for(int y = 16; y < 224; ++y){ // Don't do all of Y?
+            //     for(int x = 0; x < 256; ++x){
+                    int x = 80; int y = 32;
                     // First, convert this x/y coordinate into offset space using total deltas
-                    // BUG x offsets are backwards...?
-                    int offsetX = x - totalDeltaX;
+                    // BUG BUG BUG these mappings are super fucked up... :(
+                    int offsetX = x + totalDeltaX;
                     int offsetY = y + totalDeltaY;
+                    Debug.Log("ALSKJDLKASJDLKASJDLKJ");
+                    Debug.Log(offsetX);
+                    Debug.Log(offsetY);
 
                     // Then, convert *that* into an index into tiles[]
                     int tileX = ((TILE_ORIGIN_X * PIXELS_PER_TILE) + offsetX) / PIXELS_PER_TILE;
                     int tileY = ((TILE_ORIGIN_Y * PIXELS_PER_TILE) + offsetY) / PIXELS_PER_TILE;
+
+                    Debug.Log(tileX);
+                    Debug.Log(tileY);
 
                     if(tileX < 0 || tileX >= TILE_SIZE || tileY < 0 || tileY >= TILE_SIZE){
                         Debug.LogError("TILE_SIZE is too small");
                         return;
                     }
 
-                    // What if tiles need "updating"?
+                    // What if tiles need "updating"? Like a tile that changes, etc?
+                    // Maybe a quick-cheap comparison of "Hey, are you still that tile?" before all these shenanigans
                     if(tiles[tileX, tileY] == null){
                         for(int i = 0; i < matches.Length; ++i){
                             if(matches[i].IsMatch(x, y, bitmap)){
@@ -357,8 +417,8 @@ public class EnvironmentDrawer : MonoBehaviour {
                             }
                         }
                     }
-                }
-            }
+            //     }
+            }*/
 
             // TODO fade fullscreen tint in and out based on average screen darkness?
         } else {
