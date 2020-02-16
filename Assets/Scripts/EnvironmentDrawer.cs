@@ -35,10 +35,10 @@ public class Marker {
     public const int WIDTH = 256;
     public const int HEIGHT = 240;
 
-    public const int MARKER_SIZE = 18;
+    public const int MARKER_SIZE = 1;
     public const int MARKER_MIN = 32;
     public const int MARKER_MAX = 208; // 240 - 32
-    public const int MARKER_MAX_MOVE = 8;
+    public const int MARKER_MAX_MOVE = 4;
 
     public int previousX;
     public int previousY;
@@ -230,8 +230,8 @@ public class EnvironmentDrawer : MonoBehaviour {
     public const int TILE_ORIGIN_X = 128;
     public const int TILE_ORIGIN_Y = 128;
 
-    public const int MARKER_COUNT = 32;
-    public const int MIN_VALID_MARKER_COUNT = 4;
+    public const int MARKER_COUNT = 64;
+    public const int MIN_VALID_MARKER_COUNT = 6;
 
     public const int MINIMUM_VOTE_FOR_DELTA = 8;
 
@@ -316,6 +316,12 @@ public class EnvironmentDrawer : MonoBehaviour {
             Dictionary<int, int> xOffsetVote = new Dictionary<int, int>();
             Dictionary<int, int> yOffsetVote = new Dictionary<int, int>();
             int validMarkerCount = 0;
+
+            // Rework markers
+            // They can only offset by one pixel, each keeps a flag for each direction
+            // Then they all vote on the direction(s)
+            // And then apply that offset
+            // Then clean out all markers and reset on grid pattern
 
             for(int i = 0; i < MARKER_COUNT; ++i){
                 if(markers[i].FindMatch(bitmap)){
@@ -463,6 +469,7 @@ public class EnvironmentDrawer : MonoBehaviour {
             for(int x = 0; x < TILE_SIZE; ++x){
                 if(tiles[x, y] != null){
                     Destroy(tiles[x, y]);
+                    tiles[x, y] = null;
                 }
             }
         }
