@@ -82,7 +82,6 @@ public class Marker {
 
     public void DrawMarkerToDisplay(Texture2D texture){
         texture.SetPixel(currentX, currentY, Color.red);
-        texture.Apply();
     }
 
     private int Flatten(int x, int y){
@@ -96,7 +95,7 @@ public class EnvironmentDrawer : MonoBehaviour {
     public const int TILE_ORIGIN_Y = 128;
 
     public const int MARKER_COUNT = 64;
-    public const int RESET_MARKER_COUNT = 48;
+    public const int RESET_MARKER_COUNT = 50;
 
     public const int MINIMUM_VOTE_FOR_DELTA = 8;
 
@@ -113,6 +112,7 @@ public class EnvironmentDrawer : MonoBehaviour {
 
     private bool started = false;
     private int totalDeltaX, totalDeltaY;
+    private float cameraStartHeight;
 
     private Emulator emu;
     private Marker[] markers;
@@ -134,6 +134,8 @@ public class EnvironmentDrawer : MonoBehaviour {
         tiles = new GameObject[TILE_SIZE, TILE_SIZE];
 
         markers = new Marker[MARKER_COUNT];
+
+        cameraStartHeight = gameCamera.transform.position.y;
     }
 
     void Update(){
@@ -203,7 +205,8 @@ public class EnvironmentDrawer : MonoBehaviour {
                     allDirectionsCount++;
                 }
 
-                markers[i].DrawMarkerToDisplay(display);
+                // markers[i].DrawMarkerToDisplay(display);
+                // display.Apply();
             }
 
             // If not enough markers are valid, reset the screen
@@ -288,7 +291,7 @@ public class EnvironmentDrawer : MonoBehaviour {
         totalDeltaX = 0;
         totalDeltaY = 0;
 
-        gameCamera.transform.position = new Vector3(0.0f, 9.0f, 0.0f);
+        gameCamera.transform.position = new Vector3(0.0f, cameraStartHeight, 0.0f);
 
         for(int i = 0; i < MARKER_COUNT; ++i){
             // Probably put this in the constructor?
@@ -308,7 +311,7 @@ public class EnvironmentDrawer : MonoBehaviour {
         for(int y = 0; y < TILE_SIZE; ++y){
             for(int x = 0; x < TILE_SIZE; ++x){
                 if(tiles[x, y] != null){
-                    Destroy(tiles[x, y]);
+                    DestroyImmediate(tiles[x, y]);
                     tiles[x, y] = null;
                 }
             }
