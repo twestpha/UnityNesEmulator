@@ -39,9 +39,11 @@ public class Marker {
     public const int MARKER_MIN = 16;
     public const int MARKER_MAX = 224;
 
+    public const int COLOR_BLOCK_SIZE = 3;
+
     public int currentX;
     public int currentY;
-    public byte currentColor;
+    public byte[,] colorBlock;
 
     public int matchesFailed;
 
@@ -60,28 +62,71 @@ public class Marker {
         currentX = x;
         currentY = y;
 
-        currentColor = bitmap[Flatten(x, y)];
-    }
-
-    public void ClampToBounds(ref int x, ref int y){
-        if(x > WIDTH){ x = WIDTH; }
-        if(x < 0){ x = 0; }
-        if(y > HEIGHT){ y = HEIGHT; }
-        if(y < 0){ y = 0; }
+        colorBlock = new byte[COLOR_BLOCK_SIZE, COLOR_BLOCK_SIZE];
+        for(int by = 0; by < COLOR_BLOCK_SIZE; ++by){
+            for(int bx = 0; bx < COLOR_BLOCK_SIZE; ++bx){
+                colorBlock[bx, by] = bitmap[Flatten(currentX + bx - 1, currentY + by - 1)];
+            }
+        }
     }
 
     public void CalculateMoveDirections(byte[] bitmap){
-        centered = bitmap[Flatten(currentX, currentY)] == currentColor;
-        up       = bitmap[Flatten(currentX, currentY - 1)] == currentColor;
-        down     = bitmap[Flatten(currentX, currentY + 1)] == currentColor;
-        left     = bitmap[Flatten(currentX - 1, currentY)] == currentColor;
-        right    = bitmap[Flatten(currentX + 1, currentY)] == currentColor;
+        // Try centered/up/down/left/right move by one
+        // Record which one matches
 
-        currentColor = bitmap[Flatten(currentX, currentY)];
+        for(int i = 0; i < 5; ++i){
+            int xOffset = 0;
+            int yOffset = 0;
+
+            if(i == 1){
+                yOffset = -1;
+            } else if(i == 2){
+                yOffset = 1;
+            } else if(i == 3){
+                xOffset = -1;
+            } else if(i == 4){
+                xOffset = 1;
+            }
+
+            bool completeMatch = true;
+            for(int y = 0; y < COLOR_BLOCK_SIZE; ++y){
+                for(int x = 0; x < COLOR_BLOCK_SIZE; ++x){
+                    completeMatch &= colorBlock[x, y] == bitmap[Flatten(currentX + x + xOffset - 1, currentY + y + yOffset - 1)];
+                }
+
+                if(!completeMatch){
+                    break;
+                }
+            }
+
+            if(i == 0){
+                centered = completeMatch;
+            } else if(i == 1){
+                up = completeMatch;
+            } else if(i == 2){
+                down = completeMatch;
+            } else if(i == 3){
+                left = completeMatch;
+            } else if(i == 4){
+                right = completeMatch;
+            }
+        }
+
+        for(int by = 0; by < COLOR_BLOCK_SIZE; ++by){
+            for(int bx = 0; bx < COLOR_BLOCK_SIZE; ++bx){
+                colorBlock[bx, by] = bitmap[Flatten(currentX + bx - 1, currentY + by - 1)];
+            }
+        }
     }
 
     public void DrawMarkerToDisplay(Texture2D texture){
         texture.SetPixel(currentX, currentY, Color.red);
+
+        for(int y = 0; y < COLOR_BLOCK_SIZE; ++y){
+            for(int x = 0; x < COLOR_BLOCK_SIZE; ++x){
+                texture.SetPixel(currentX + x - 1, currentY + y - 1, Color.red);
+            }
+        }
     }
 
     private int Flatten(int x, int y){
@@ -94,8 +139,8 @@ public class EnvironmentDrawer : MonoBehaviour {
     public const int TILE_ORIGIN_X = 128;
     public const int TILE_ORIGIN_Y = 128;
 
-    public const int MARKER_COUNT = 64;
-    public const int RESET_MARKER_COUNT = 50;
+    public const int MARKER_COUNT = 32;
+    public const int RESET_MARKER_COUNT = 28;
 
     public const int MINIMUM_VOTE_FOR_DELTA = 8;
 
@@ -126,6 +171,9 @@ public class EnvironmentDrawer : MonoBehaviour {
     [Header("Tuning")]
     public float tuningOffsetX;
     public float tuningOffsetY;
+
+    [Header("Debug Reset")]
+    public bool DebugReset;
 
     void Start(){
         emu = GetComponent<Emulator>();
@@ -179,6 +227,12 @@ public class EnvironmentDrawer : MonoBehaviour {
                     EditorUtility.SetDirty(outputData);
                     AssetDatabase.SaveAssets();
                 }
+
+                if(DebugReset){
+                    DebugReset = false;
+                    ResetAllTiles();
+                    ResetAllMarkers();
+                }
             #endif // UNITY_EDITOR
 
             // Get "average" delta with voting
@@ -193,7 +247,8 @@ public class EnvironmentDrawer : MonoBehaviour {
             for(int i = 0; i < MARKER_COUNT; ++i){
                 markers[i].CalculateMoveDirections(bitmap);
 
-                bool allDirections = markers[i].centered && markers[i].up && markers[i].down && markers[i].left && markers[i].right;
+                // bool allDirections = markers[i].centered && markers[i].up && markers[i].down && markers[i].left && markers[i].right;
+                bool allDirections = false;
 
                 if(!allDirections){
                     centeredCount += markers[i].centered ? 1 : 0;
@@ -293,17 +348,19 @@ public class EnvironmentDrawer : MonoBehaviour {
 
         gameCamera.transform.position = new Vector3(0.0f, cameraStartHeight, 0.0f);
 
-        for(int i = 0; i < MARKER_COUNT; ++i){
-            // Probably put this in the constructor?
-            // TODO don't randomize tracker location, use strategic positions
-            int xrand = 32 + (int)(Random.value * (float)(208 - 32));
-            int yrand = 32 + (int)(Random.value * (float)(208 - 32));
+        int i = 0;
+        for(int x = 0; x < 8; ++x){
+            for(int y = 0; y < 4; ++y){
+                int xpos = 32 + (x * 22);
+                int ypos = 32 + (y * 44);
 
-            // Debug.Log("(" + xrand + ", " + yrand + ")");
-            markers[i] = new Marker(
-                xrand, yrand,
-                emu.GetConsole().Ppu.BitmapData
-            );
+                markers[i] = new Marker(
+                    xpos, ypos,
+                    emu.GetConsole().Ppu.BitmapData
+                );
+
+                i++;
+            }
         }
     }
 
