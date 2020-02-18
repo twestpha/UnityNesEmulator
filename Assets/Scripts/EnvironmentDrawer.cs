@@ -1,4 +1,4 @@
-﻿using System.Collections;
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 using UnityEditor;
@@ -324,6 +324,8 @@ public class EnvironmentDrawer : MonoBehaviour {
                                 float posY = ((tileY - TILE_ORIGIN_Y) * PIXELS_PER_TILE) * PIXELS_TO_WORLD;
 
                                 newTile.transform.position = new Vector3(posX + tuningOffsetX, 0.0f, -posY + tuningOffsetY);
+
+                                break;
                             }
                         }
                     }
